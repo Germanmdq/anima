@@ -1,0 +1,9 @@
+node_modules/
+.next/
+*.zip
+extracted/
+biblioteca/
+biblioteca_en/
+pdfs/
+.DS_Store
+*.tsbuildinfo
