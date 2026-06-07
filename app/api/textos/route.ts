@@ -7,7 +7,7 @@ export async function GET() {
   try {
     const { data, error } = await supabase
       .from("study_materials")
-      .select("slug, source_filename, title_es, original_title, year")
+      .select("slug, source_filename, title_es, original_title, year, tags")
       .eq("language", "es")
       .eq("is_published", true)
       .order("slug");
@@ -19,6 +19,7 @@ export async function GET() {
       titulo: m.title_es || m.slug,
       tituloOriginal: m.original_title || "",
       anio: m.year || "Sin año",
+      tags: m.tags || [],
     }));
 
     return NextResponse.json(metadatos);

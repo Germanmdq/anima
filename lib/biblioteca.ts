@@ -4,6 +4,7 @@ export interface Texto {
   filename: string;
   titulo: string;
   tituloOriginal: string;
+  documentoTitulo: string;
   anio: string;
   contenido: string;
 }
@@ -129,6 +130,7 @@ function toTexto(chunk: ChunkResult): Texto {
     filename: meta.filename || "",
     titulo: chunk.heading || meta.title_es || "",
     tituloOriginal: meta.original_title || "",
+    documentoTitulo: meta.title_es || chunk.heading || "",
     anio: meta.year || "",
     contenido: chunk.content || "",
   };
@@ -150,6 +152,7 @@ export async function cargarBiblioteca(): Promise<Texto[]> {
     tituloOriginal: m.original_title || "",
     anio: m.year || "",
     contenido: "",
+    documentoTitulo: m.original_title || m.title_es || "",
   }));
 }
 
@@ -173,11 +176,16 @@ export function construirContexto(textos: Texto[]): string {
 
   const bloques = textos.map((t, i) => {
     const meta: string[] = [];
+    const docTitulo = t.documentoTitulo || t.titulo || "Documento";
     if (t.tituloOriginal) meta.push(`Original: ${t.tituloOriginal}`);
     if (t.anio && t.anio !== "Sin año") meta.push(`Año: ${t.anio}`);
 
+    const header = t.titulo && t.titulo !== docTitulo
+      ? `══ ${docTitulo} ══\nSección: ${t.titulo}`
+      : `══ ${docTitulo} ══`;
+
     return [
-      `══ TEXTO ${i + 1}: ${t.titulo} ══`,
+      header,
       meta.length > 0 ? `[${meta.join(" | ")}]` : "",
       "",
       t.contenido,

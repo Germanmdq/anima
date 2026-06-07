@@ -5,15 +5,20 @@ import {
   Activity,
   Bell,
   BookOpen,
+  BookText,
   Bot,
   ChevronDown,
+  Cross,
   GraduationCap,
   History,
   HomeIcon,
   Library,
+  Lightbulb,
   Map as MapIconLucide,
   MessageSquareText,
   NotebookTabs,
+  Quote,
+  ScrollText,
   SearchIcon,
   Sparkles,
   Trophy,
@@ -30,7 +35,7 @@ interface Mensaje {
 }
 
 type AgenteId = "profesor" | "cuentacuentos";
-type TabId = "panel" | "aula" | "biblioteca" | "examenes" | "libro" | "memoria" | "perfil" | "planes";
+type TabId = "panel" | "aula" | "biblioteca" | "examenes" | "libro" | "memoria" | "perfil" | "planes" | "citas" | "lecturas" | "practicas" | "biblico" | "glosario" | "testimonios";
 type ChatModeId = "conversar" | "preguntas" | "plan" | "libro" | "diario" | "presentacion";
 
 interface TextoMetadatos {
@@ -38,6 +43,7 @@ interface TextoMetadatos {
   titulo: string;
   tituloOriginal: string;
   anio: string;
+  tags?: string[];
 }
 
 interface ContextoClase {
@@ -247,6 +253,7 @@ export default function Home() {
   const [textos, setTextos] = useState<TextoMetadatos[]>([]);
   const [loadingLib, setLoadingLib] = useState(false);
   const [search, setSearch] = useState("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedText, setSelectedText] = useState<TextoMetadatos | null>(null);
   const [textDetail, setTextDetail] = useState<string | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -562,20 +569,22 @@ export default function Home() {
   // Cargar memoria (sesiones, exámenes, libros)
   const cargarMemoria = useCallback(async () => {
     setLoadingMemoria(true);
-    try {
-      const [sessionsRes, examsRes, booksRes] = await Promise.all([
-        fetch("/api/sessions"),
-        fetch("/api/assessments"),
-        fetch("/api/books"),
-      ]);
-      if (sessionsRes.ok) setMemoriaSessions(await sessionsRes.json());
-      if (examsRes.ok) setMemoriaExams(await examsRes.json());
-      if (booksRes.ok) setMemoriaBooks(await booksRes.json());
-    } catch (err) {
-      console.error("Error cargando memoria:", err);
-    } finally {
-      setLoadingMemoria(false);
-    }
+    const fetchSafe = async (url: string) => {
+      try {
+        const res = await fetch(url);
+        if (res.ok) return await res.json();
+      } catch (_) {}
+      return null;
+    };
+    const [sessions, exams, books] = await Promise.all([
+      fetchSafe("/api/sessions"),
+      fetchSafe("/api/assessments"),
+      fetchSafe("/api/books"),
+    ]);
+    if (sessions) setMemoriaSessions(sessions);
+    if (exams) setMemoriaExams(exams);
+    if (books) setMemoriaBooks(books);
+    setLoadingMemoria(false);
   }, []);
 
   useEffect(() => {
@@ -812,10 +821,20 @@ ${contenidoConsolidado}
   };
 
   // Filtrar biblioteca
-  const textosFiltrados = textos.filter((t) =>
-    t.titulo.toLowerCase().includes(search.toLowerCase()) ||
-    t.tituloOriginal.toLowerCase().includes(search.toLowerCase())
-  );
+  const allTags = [...new Set(textos.flatMap((t) => t.tags || []))].sort();
+  const textosFiltrados = textos.filter((t) => {
+    if (selectedTags.length > 0) {
+      const tTags = t.tags || [];
+      if (!selectedTags.some((st) => tTags.includes(st))) return false;
+    }
+    if (search) {
+      return (
+        t.titulo.toLowerCase().includes(search.toLowerCase()) ||
+        t.tituloOriginal.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+    return true;
+  });
 
   if (!showApp) {
     return (
@@ -1344,6 +1363,58 @@ ${contenidoConsolidado}
               <span style={{ flex: 1 }}>Planes</span>
             </button>
 
+            <div className="flux-nav__section-label">Agentes</div>
+
+            <button
+              onClick={() => { setCurrentTab("citas"); setAgent("profesor"); setChatMode("conversar"); }}
+              className={`flux-nav__link ${currentTab === "citas" ? "flux-nav__link--active" : ""}`}
+            >
+              <Quote aria-hidden="true" />
+              <span style={{ flex: 1 }}>Citas</span>
+            </button>
+
+            <button
+              onClick={() => { setCurrentTab("lecturas"); setAgent("profesor"); setChatMode("conversar"); }}
+              className={`flux-nav__link ${currentTab === "lecturas" ? "flux-nav__link--active" : ""}`}
+            >
+              <BookOpen aria-hidden="true" />
+              <span style={{ flex: 1 }}>Lecturas</span>
+            </button>
+
+            <button
+              onClick={() => { setCurrentTab("practicas"); setAgent("profesor"); setChatMode("conversar"); }}
+              className={`flux-nav__link ${currentTab === "practicas" ? "flux-nav__link--active" : ""}`}
+            >
+              <Lightbulb aria-hidden="true" />
+              <span style={{ flex: 1 }}>Prácticas</span>
+            </button>
+
+            <button
+              onClick={() => { setCurrentTab("biblico"); setAgent("profesor"); setChatMode("conversar"); }}
+              className={`flux-nav__link ${currentTab === "biblico" ? "flux-nav__link--active" : ""}`}
+            >
+              <Cross aria-hidden="true" />
+              <span style={{ flex: 1 }}>Bíblico</span>
+            </button>
+
+            <button
+              onClick={() => { setCurrentTab("glosario"); setAgent("profesor"); setChatMode("conversar"); }}
+              className={`flux-nav__link ${currentTab === "glosario" ? "flux-nav__link--active" : ""}`}
+            >
+              <BookText aria-hidden="true" />
+              <span style={{ flex: 1 }}>Glosario</span>
+            </button>
+
+            <button
+              onClick={() => { setCurrentTab("testimonios"); setAgent("cuentacuentos"); setChatMode("conversar"); }}
+              className={`flux-nav__link ${currentTab === "testimonios" ? "flux-nav__link--active" : ""}`}
+            >
+              <ScrollText aria-hidden="true" />
+              <span style={{ flex: 1 }}>Testimonios</span>
+            </button>
+
+            <div className="flux-nav__section-label" style={{ marginTop: "8px" }}>Cuenta</div>
+
             <button
               onClick={() => setCurrentTab("perfil")}
               className={`flux-nav__link ${currentTab === "perfil" ? "flux-nav__link--active" : ""}`}
@@ -1609,14 +1680,30 @@ ${contenidoConsolidado}
           </>
         )}
 
-        {/* 2. EL AULA (CHAT RAG INTEGRADO) */}
-        {currentTab === "aula" && (
+        {/* 2. AGENTES (CHAT RAG INTEGRADO) */}
+        {(["aula", "citas", "lecturas", "practicas", "biblico", "glosario", "testimonios"] as TabId[]).includes(currentTab) && (
           <div className="flux-chat-container">
             {/* Header del Chat */}
             <div className="flux-chat-header">
               <div>
-                <span className="flux-chat-header__eyebrow">Centro de mando</span>
-                <h2 className="flux-chat-header__title">Anima</h2>
+                <span className="flux-chat-header__eyebrow">
+                  {currentTab === "aula" ? "Centro de mando" :
+                   currentTab === "citas" ? "Agente de Citas" :
+                   currentTab === "lecturas" ? "Agente de Lecturas" :
+                   currentTab === "practicas" ? "Agente de Prácticas" :
+                   currentTab === "biblico" ? "Agente Bíblico" :
+                   currentTab === "glosario" ? "Agente de Glosario" :
+                   "Agente de Testimonios"}
+                </span>
+                <h2 className="flux-chat-header__title">
+                  {currentTab === "aula" ? "Anima" :
+                   currentTab === "citas" ? "Citas" :
+                   currentTab === "lecturas" ? "Lecturas Recomendadas" :
+                   currentTab === "practicas" ? "Prácticas" :
+                   currentTab === "biblico" ? "Bíblico / Personajes" :
+                   currentTab === "glosario" ? "Glosario y Definiciones" :
+                   "Testimonios y Casos"}
+                </h2>
               </div>
 
               <div className="flux-chat-agents">
@@ -1798,6 +1885,44 @@ ${contenidoConsolidado}
               )}
             </div>
 
+            {/* Filtro por etiquetas */}
+            {allTags.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "16px" }}>
+                {selectedTags.length > 0 && (
+                  <button
+                    onClick={() => setSelectedTags([])}
+                    className="flux-class-badge"
+                    style={{ background: "var(--swiss-accent)", color: "white", border: "none", cursor: "pointer", fontSize: "10px" }}
+                  >
+                    Limpiar filtros
+                  </button>
+                )}
+                {allTags.map((tag) => {
+                  const active = selectedTags.includes(tag);
+                  return (
+                    <button
+                      key={tag}
+                      onClick={() =>
+                        setSelectedTags((prev) =>
+                          prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+                        )
+                      }
+                      className="flux-class-badge"
+                      style={{
+                        background: active ? "var(--swiss-accent)" : "var(--swiss-muted)",
+                        color: active ? "white" : "inherit",
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: "10px",
+                      }}
+                    >
+                      {tag}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             {/* Grid de archivos .md */}
             {loadingLib ? (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyItems: "center", justifyContent: "center", flex: 1, padding: "40px" }}>
@@ -1825,6 +1950,20 @@ ${contenidoConsolidado}
                           </span>
                         )}
                       </div>
+                      {texto.tags && texto.tags.length > 0 && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "3px", marginTop: "6px" }}>
+                          {texto.tags.slice(0, 4).map((tag) => (
+                            <span key={tag} className="flux-class-badge" style={{ fontSize: "9px", background: "var(--swiss-muted)", opacity: 0.8 }}>
+                              {tag}
+                            </span>
+                          ))}
+                          {texto.tags.length > 4 && (
+                            <span className="flux-class-badge" style={{ fontSize: "9px", background: "var(--swiss-muted)", opacity: 0.6 }}>
+                              +{texto.tags.length - 4}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))
                 )}
@@ -2407,6 +2546,54 @@ ${contenidoConsolidado}
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
           </svg>
           <span>Planes</span>
+        </button>
+
+        <button
+          onClick={() => { setCurrentTab("citas"); setAgent("profesor"); setChatMode("conversar"); }}
+          className={`flux-mobile-nav__link ${currentTab === "citas" ? "flux-mobile-nav__link--active" : ""}`}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21c3 0 7-1 7-8 0-3.5-2-7-3-7S4 10 4 13c0 2 1 3 1 3S3 18 3 21z"/><path d="M15 21c3 0 7-1 7-8 0-3.5-2-7-3-7s-3 3.5-3 6c0 2 1 3 1 3s-2 2-2 5z"/></svg>
+          <span>Citas</span>
+        </button>
+
+        <button
+          onClick={() => { setCurrentTab("lecturas"); setAgent("profesor"); setChatMode("conversar"); }}
+          className={`flux-mobile-nav__link ${currentTab === "lecturas" ? "flux-mobile-nav__link--active" : ""}`}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8"/><path d="M8 11h6"/></svg>
+          <span>Lecturas</span>
+        </button>
+
+        <button
+          onClick={() => { setCurrentTab("practicas"); setAgent("profesor"); setChatMode("conversar"); }}
+          className={`flux-mobile-nav__link ${currentTab === "practicas" ? "flux-mobile-nav__link--active" : ""}`}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>
+          <span>Prácticas</span>
+        </button>
+
+        <button
+          onClick={() => { setCurrentTab("biblico"); setAgent("profesor"); setChatMode("conversar"); }}
+          className={`flux-mobile-nav__link ${currentTab === "biblico" ? "flux-mobile-nav__link--active" : ""}`}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20"/><path d="M2 12h20"/></svg>
+          <span>Bíblico</span>
+        </button>
+
+        <button
+          onClick={() => { setCurrentTab("glosario"); setAgent("profesor"); setChatMode("conversar"); }}
+          className={`flux-mobile-nav__link ${currentTab === "glosario" ? "flux-mobile-nav__link--active" : ""}`}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          <span>Glosario</span>
+        </button>
+
+        <button
+          onClick={() => { setCurrentTab("testimonios"); setAgent("cuentacuentos"); setChatMode("conversar"); }}
+          className={`flux-mobile-nav__link ${currentTab === "testimonios" ? "flux-mobile-nav__link--active" : ""}`}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <span>Testimonios</span>
         </button>
 
         <button

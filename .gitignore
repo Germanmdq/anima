@@ -7,3 +7,7 @@ biblioteca_en/
 pdfs/
 .DS_Store
 *.tsbuildinfo
+.env.local
+test_gemini.js
+LEEME.html
+restore_anima.sh
