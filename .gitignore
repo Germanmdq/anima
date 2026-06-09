@@ -11,3 +11,15 @@ pdfs/
 test_gemini.js
 LEEME.html
 restore_anima.sh
+
+# Local design references / Claude Design exports
+design-reference/
+
+# Local test/debug files
+reporte_codigo.txt
+test-db.js
+test-schema.js
+test-users.js
+
+# Local debug scripts with secrets
+scripts/check-profiles.ts

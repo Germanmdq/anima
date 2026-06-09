@@ -1,15 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { getCurrentUserId, missingUserResponse } from "@/lib/current-user";
+import { requireAccessToken } from "@/lib/auth-guard";
 
 export const runtime = "nodejs";
 
-const USER_ID = "b938b4c3-e0a1-4333-b684-91d99bad7108";
+export async function GET(request: NextRequest) {
+  const denied = requireAccessToken(request);
+  if (denied) return denied;
 
-export async function GET() {
+  let userId: string;
+  try { userId = getCurrentUserId(); } catch { return missingUserResponse(); }
+
   const { data } = await supabase
     .from("assessments")
     .select("id, title_es, score, max_score, completed_at, created_at")
-    .eq("user_id", USER_ID)
+    .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(20);
 
@@ -17,12 +23,18 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const denied = requireAccessToken(request);
+  if (denied) return denied;
+
+  let userId: string;
+  try { userId = getCurrentUserId(); } catch { return missingUserResponse(); }
+
   const body = await request.json();
 
   const { data, error } = await supabase
     .from("assessments")
     .insert({
-      user_id: USER_ID,
+      user_id: userId,
       title_es: body.title_es || "Examen",
       locale: "es",
       material_id: body.material_id || null,

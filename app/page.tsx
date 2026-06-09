@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import Image from "next/image";
 import {
   Activity,
   Bell,
@@ -24,6 +25,13 @@ import {
   Trophy,
   UserCog,
   UserRound,
+  HelpCircle,
+  Send,
+  FileText,
+  StickyNote,
+  Calendar,
+  LogOut,
+  Edit3,
 } from "lucide-react";
 
 // ─── Tipos ──────────────────────────────────────────────────
@@ -34,9 +42,31 @@ interface Mensaje {
   content: string;
 }
 
+import { supabaseClient } from "@/lib/supabase-client";
+
+import ImaginaliaPortal from "@/components/portal/ImaginaliaPortal";
+import NarratorView from "@/components/portal/NarratorView";
+import TelegramView from "@/components/portal/TelegramView";
+import CoachView from "@/components/portal/CoachView";
+import TestimoniosView from "@/components/portal/TestimoniosView";
+import BiblicaView from "@/components/portal/BiblicaView";
+import NotesPanel from "@/components/notes/NotesPanel";
+import MemoryPanel from "@/components/memory/MemoryPanel";
+import JournalPanel from "@/components/journal/JournalPanel";
+import { QUICK_ACTION_PROMPTS, buildBookPrompt, buildPlanPrompt } from "@/lib/prompts";
+import { BRAND_DESCRIPTION, BRAND_INTERNAL_SPACE, BRAND_NAME, BRAND_NAME_UPPER, BRAND_TAGLINE } from "@/lib/brand";
+
 type AgenteId = "profesor" | "cuentacuentos";
-type TabId = "panel" | "aula" | "biblioteca" | "examenes" | "libro" | "memoria" | "perfil" | "planes" | "citas" | "lecturas" | "practicas" | "biblico" | "glosario" | "testimonios";
+type TabId = "panel" | "aula" | "biblioteca" | "examenes" | "libro" | "memoria" | "perfil" | "planes" | "citas" | "lecturas" | "practicas" | "biblico" | "glosario" | "testimonios" | "telegram" | "narrador" | "notas" | "diario";
 type ChatModeId = "conversar" | "preguntas" | "plan" | "libro" | "diario" | "presentacion";
+
+export type PendingContext = {
+  source: string;
+  target: TabId;
+  title?: string;
+  content: string;
+  action?: string;
+} | null;
 
 interface TextoMetadatos {
   filename: string;
@@ -233,9 +263,37 @@ function parseMarkdown(text: string): React.ReactNode[] {
 // ─── Componente Principal ────────────────────────────────────
 
 export default function Home() {
+  // Montaje — evita hydration mismatch causado por extensiones de browser
+  const [mounted, setMounted] = useState(false);
+
   // Navegación
   const [currentTab, setCurrentTab] = useState<TabId>("panel");
   const [showApp, setShowApp] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
+  // Auth
+  const [session, setSession] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentProfile, setCurrentProfile] = useState<any>(null);
+  const [authorMenuOpen, setAuthorMenuOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  // Login form
+  const [loginMode, setLoginMode] = useState<"login" | "register">("login");
+  const [loginForm, setLoginForm] = useState({ name: "", email: "", password: "" });
+  const [loginError, setLoginError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  // Puente de contexto interno
+  const [pendingContext, setPendingContext] = useState<PendingContext>(null);
+
+  const sendToSection = (target: string, context: Omit<NonNullable<PendingContext>, "target">) => {
+    setPendingContext({
+      target: target as TabId,
+      ...context
+    });
+    setCurrentTab(target as TabId);
+  };
 
   // Contexto activo para el Aula Virtual (inyección RAG directa)
   const [selectedClassContext, setSelectedClassContext] = useState<ContextoClase | null>(null);
@@ -247,7 +305,7 @@ export default function Home() {
   const [chatMode, setChatMode] = useState<ChatModeId>("conversar");
   const [useMemory, setUseMemory] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [questionsCount, setQuestionsCount] = useState(84);
+  const [questionsCount, setQuestionsCount] = useState(0);
 
   // Biblioteca
   const [textos, setTextos] = useState<TextoMetadatos[]>([]);
@@ -258,16 +316,33 @@ export default function Home() {
   const [textDetail, setTextDetail] = useState<string | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
-  // Exámenes
+  // Exámenes (Preguntas y Respuestas)
   const [examStarted, setExamStarted] = useState(false);
-  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [answers, setAnswers] = useState<Record<number, number | string | boolean>>({});
   const [examScore, setExamScore] = useState<number | null>(null);
+  const [examQuestions, setExamQuestions] = useState<any[]>([]);
+  const [examLoading, setExamLoading] = useState(false);
+  const [examQuantity, setExamQuantity] = useState("5");
+  const [examDifficulty, setExamDifficulty] = useState("Media");
+  const [examFormat, setExamFormat] = useState("Mixto");
+  const [examMaterial, setExamMaterial] = useState("");
 
   // Compilador de Libros
   const [selectedTopic, setSelectedTopic] = useState("La Fe");
   const [compilingStep, setCompilingStep] = useState<number>(-1);
   const [compiledBookTitle, setCompiledBookTitle] = useState<string | null>(null);
   const [compiledBookContent, setCompiledBookContent] = useState<string | null>(null);
+  const [bookForm, setBookForm] = useState({
+    title: "",
+    theme: "",
+    include: "",
+    tone: "Práctico",
+  });
+  const [bookDraft, setBookDraft] = useState<string | null>(null);
+  const [bookLoading, setBookLoading] = useState(false);
+  const [bookError, setBookError] = useState("");
+  const [bookSavingMemory, setBookSavingMemory] = useState(false);
+  const [bookSavedMessage, setBookSavedMessage] = useState("");
 
   // Sesión persistente
   const [sessionId, setSessionId] = useState<string>("");
@@ -285,6 +360,165 @@ export default function Home() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Autenticación con Supabase (también activa `mounted` para resolver hydration mismatch)
+  useEffect(() => {
+    setMounted(true);
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setCurrentUser(session?.user ?? null);
+      if (session) {
+        if (typeof window !== "undefined" && window.location.hash.includes("access_token")) {
+          window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.search}`);
+        }
+        syncProfile(session);
+        setShowLoginModal(false);
+        setShowApp(true);
+      } else {
+        setCurrentProfile(null);
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabaseClient.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setCurrentUser(session?.user ?? null);
+      if (session) {
+        if (typeof window !== "undefined" && window.location.hash.includes("access_token")) {
+          window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.search}`);
+        }
+        syncProfile(session);
+        setShowLoginModal(false);
+        setShowApp(true);
+      } else {
+        setCurrentProfile(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const syncProfile = async (sess: any) => {
+    if (!sess?.access_token || !sess?.user?.email) {
+      console.warn("No hay sesión válida todavía. No se crea perfil.");
+      return;
+    }
+    
+    try {
+      const res = await fetch("/api/auth/profile", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sess.access_token}`,
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentProfile(data.profile ?? null);
+      }
+    } catch (e) {
+      console.error("Error syncing profile", e);
+    }
+  };
+
+  const handleEmailLogin = async () => {
+    setLoginError("");
+    setLoginLoading(true);
+    try {
+      const { error } = await supabaseClient.auth.signInWithPassword({
+        email: loginForm.email,
+        password: loginForm.password,
+      });
+      if (error) {
+        setLoginError(error.message);
+      }
+    } catch (e: any) {
+      setLoginError(e.message);
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleEmailRegister = async () => {
+    setLoginError("");
+    if (!loginForm.name.trim()) {
+      setLoginError("Ingresá tu nombre.");
+      return;
+    }
+    setLoginLoading(true);
+    try {
+      const { error } = await supabaseClient.auth.signUp({
+        email: loginForm.email,
+        password: loginForm.password,
+        options: {
+          data: {
+            full_name: loginForm.name,
+            display_name: loginForm.name,
+          },
+        },
+      });
+      if (error) {
+        setLoginError(error.message);
+      } else {
+        setLoginMode("login");
+      }
+    } catch (e: any) {
+      setLoginError(e.message);
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleIngresar = () => {
+    if (session) {
+      setShowApp(true);
+    } else {
+      setShowLoginModal(true);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    await supabaseClient.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}`
+      }
+    });
+  };
+
+  const isAdminUser = currentUser?.email === "germangonzalezmdq@gmail.com";
+  const hasFounderAccess = isAdminUser || currentProfile?.plan === "founder" || currentProfile?.plan_tier === "founder";
+  const planLabel = hasFounderAccess ? "Plan fundador" : "Plan gratuito";
+  const subscriptionStatus = isAdminUser ? "Administrador" : (currentProfile?.status === "active" ? "Activa" : "Sin suscripción activa");
+  const displayName = currentProfile?.display_name || currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.name || currentUser?.email || "Usuario";
+  const bookStorageKey = `odiseo_book_draft_${currentUser?.id || "guest"}`;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = localStorage.getItem(bookStorageKey);
+    if (!saved) return;
+    try {
+      const parsed = JSON.parse(saved);
+      if (parsed.form) setBookForm({ title: "", theme: "", include: "", tone: "Práctico", ...parsed.form });
+      if (typeof parsed.draft === "string") setBookDraft(parsed.draft);
+    } catch (error) {
+      console.error("Error loading book draft", error);
+    }
+  }, [bookStorageKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(bookStorageKey, JSON.stringify({ form: bookForm, draft: bookDraft }));
+  }, [bookStorageKey, bookForm, bookDraft]);
+
+  const handleSignOut = async () => {
+    await supabaseClient.auth.signOut();
+    setSession(null);
+    setCurrentUser(null);
+    setCurrentProfile(null);
+    setShowApp(false);
+  };
 
   // Cargar o crear sesión al montar
   useEffect(() => {
@@ -341,25 +575,30 @@ export default function Home() {
       id: "preguntas",
       label: "Prueba",
       desc: "Crear preguntas desde una charla o lectura.",
-      prompt: "Generá una prueba breve usando mi memoria y el material trabajado.",
+      prompt: QUICK_ACTION_PROMPTS.questions,
     },
     {
       id: "plan",
       label: "Plan",
       desc: "Diseñar una práctica de 7, 15 o 30 días.",
-      prompt: "Diseñá un plan de 7 días a partir de mi objetivo y mi historial.",
+      prompt: buildPlanPrompt("7", "mi objetivo y mi historial"),
     },
     {
       id: "libro",
       label: "Libro",
       desc: "Convertir conversaciones y notas en capítulos.",
-      prompt: "Diseñá el índice de mi libro personal con lo trabajado hasta ahora.",
+      prompt: buildBookPrompt({
+        bookTitle: "Mi libro personal",
+        theme: "lo trabajado hasta ahora",
+        material: "conversaciones, notas, memoria y practicas recientes",
+        tone: "claro, sobrio y personal",
+      }),
     },
     {
       id: "diario",
       label: "Diario",
       desc: "Registrar intención, estado y avance.",
-      prompt: "Ayudame a escribir una entrada de diario sobre mi estado de hoy.",
+      prompt: QUICK_ACTION_PROMPTS.journal,
     },
     {
       id: "presentacion",
@@ -453,14 +692,13 @@ export default function Home() {
   };
 
   // Enviar mensaje en el chat
-  const handleSend = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!input.trim() || loading) return;
+  const sendChatMessage = async (messageText: string, visibleText?: string) => {
+    if (!messageText.trim() || loading) return;
 
     const userMessage: Mensaje = {
       id: Date.now().toString(),
       role: "user",
-      content: input.trim(),
+      content: visibleText?.trim() || messageText.trim(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -484,12 +722,13 @@ export default function Home() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          message: userMessage.content,
+          message: messageText.trim(),
           agent,
           history,
           currentSection: currentTab === "examenes" ? "examen" : currentTab,
           contextData: {
             selectedFile: selectedClassContext?.filename || undefined,
+            userName: currentProfile?.display_name || currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.name || currentUser?.email || "Usuario",
             useMemory,
             chatMode,
             memoryScope: useMemory
@@ -566,6 +805,11 @@ export default function Home() {
     }
   };
 
+  const handleSend = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    await sendChatMessage(input);
+  };
+
   // Cargar memoria (sesiones, exámenes, libros)
   const cargarMemoria = useCallback(async () => {
     setLoadingMemoria(true);
@@ -639,43 +883,36 @@ export default function Home() {
   };
 
   // Exámenes generados por IA
-  const [examQuestions, setExamQuestions] = useState<any[]>([]);
-  const [examLoading, setExamLoading] = useState(false);
-
   const generarExamen = async () => {
     setExamLoading(true);
     setExamStarted(true);
     setAnswers({});
     setExamScore(null);
+    setExamQuestions([]);
 
     try {
-      const res = await fetch("/api/chat", {
+      const uid = session?.user?.id || null;
+      if (!uid) {
+        throw new Error("No hay usuario autenticado para generar examen.");
+      }
+      const material = pendingContext?.target === "examenes" ? pendingContext.content : examMaterial;
+
+      const res = await fetch("/api/examenes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: "Generá un examen de 3 preguntas de opción múltiple sobre el material y doctrina de Neville Goddard. Cada pregunta debe tener 3 opciones (A, B, C). Indicá cuál es la correcta. Respondé SOLO con JSON: [{\"pregunta\":\"...\",\"opciones\":[\"A\",\"B\",\"C\"],\"correcta\":0}]",
-          agent: "profesor",
-          history: [],
-          currentSection: "aula",
-          contextData: { useMemory: false, chatMode: "preguntas" },
+          user_id: uid,
+          cantidad: examQuantity,
+          dificultad: examDifficulty,
+          formato: examFormat,
+          material: material
         }),
       });
 
-      const reader = res.body?.getReader();
-      let text = "";
-      if (reader) {
-        const decoder = new TextDecoder();
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          text += decoder.decode(value, { stream: true });
-        }
-      }
-
-      const jsonMatch = text.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        setExamQuestions(parsed.map((q: any, i: number) => ({ ...q, id: i + 1 })));
+      const data = await res.json();
+      if (data.success && data.preguntas) {
+        setExamQuestions(data.preguntas.map((q: any, i: number) => ({ ...q, id: i + 1 })));
+        setPendingContext(null);
       }
     } catch (err) {
       console.error("Error generando examen:", err);
@@ -686,24 +923,19 @@ export default function Home() {
 
   const corregirExamen = async () => {
     let score = 0;
-    const maxScore = examQuestions.length;
+    let maxScore = 0;
+    
     examQuestions.forEach((p: any) => {
-      if (answers[p.id] === p.correcta) {
-        score += 1;
+      // Solo sumamos puntaje automático en múltiple choice o V/F
+      if (p.tipo === "opcion_multiple" || p.tipo === "verdadero_falso") {
+        maxScore += 1;
+        if (answers[p.id] === p.correcta) {
+          score += 1;
+        }
       }
     });
-    setExamScore(score);
 
-    await fetch("/api/assessments", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title_es: `Examen - ${new Date().toLocaleDateString("es-AR")}`,
-        questions: examQuestions,
-        score,
-        max_score: maxScore,
-      }),
-    });
+    setExamScore(maxScore > 0 ? (score / maxScore) * 100 : 100);
   };
 
   const resetearExamen = () => {
@@ -771,11 +1003,11 @@ export default function Home() {
       setCompilingStep(2);
 
       const fechaHoy = new Date().toLocaleDateString("es-AR", { year: "numeric", month: "long", day: "numeric" });
-      const libroCompleto = `# Libro de Luz: ${selectedTopic}
+const libroCompleto = `# Libro de Luz: ${selectedTopic}
 
-**Compilado por:** Germán Gonzalez
+**Compilado por:** ${currentProfile?.display_name || currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.name || currentUser?.email || "Usuario"}
 **Fecha de emisión:** ${fechaHoy}
-**Universidad de la Imaginación**
+**${BRAND_INTERNAL_SPACE}**
 
 ---
 > "La asunción de que tu deseo ya se ha cumplido le da realidad objetiva a tu asunción." — Neville Goddard
@@ -820,6 +1052,100 @@ ${contenidoConsolidado}
     document.body.removeChild(link);
   };
 
+  const updateBookForm = (field: keyof typeof bookForm, value: string) => {
+    setBookForm((prev) => ({ ...prev, [field]: value }));
+    setBookError("");
+    setBookSavedMessage("");
+  };
+
+  const handleCrearLibro = async (event?: React.FormEvent) => {
+    event?.preventDefault();
+    const payload = {
+      title: bookForm.title.trim(),
+      theme: bookForm.theme.trim(),
+      include: bookForm.include.trim(),
+      tone: bookForm.tone,
+    };
+
+    if (!payload.title || !payload.theme || !payload.include) {
+      setBookError("Completá título, tema central y qué querés incluir.");
+      return;
+    }
+
+    setBookLoading(true);
+    setBookError("");
+    setBookSavedMessage("");
+
+    try {
+      const response = await fetch("/api/libro", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "No se pudo crear el libro.");
+      }
+      setBookDraft(data.draft);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No se pudo crear el libro.";
+      setBookError(message);
+    } finally {
+      setBookLoading(false);
+    }
+  };
+
+  const handleGuardarLibroEnMemoria = async () => {
+    if (!bookDraft) return;
+    if (!session?.access_token) {
+      setBookError("Necesitás una sesión activa para guardar en memoria.");
+      return;
+    }
+
+    setBookSavingMemory(true);
+    setBookError("");
+    setBookSavedMessage("");
+
+    try {
+      const response = await fetch("/api/memoria", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          item_type: "book",
+          title: bookForm.title.trim() || "Borrador de libro",
+          source: "Mi libro",
+          status: "active",
+          content: {
+            title: bookForm.title.trim(),
+            theme: bookForm.theme.trim(),
+            tone: bookForm.tone,
+            draft: bookDraft,
+          },
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "No se pudo guardar en memoria.");
+      }
+      setBookSavedMessage("Guardado en memoria.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No se pudo guardar en memoria.";
+      setBookError(message);
+    } finally {
+      setBookSavingMemory(false);
+    }
+  };
+
+  const resetBookDraft = () => {
+    setBookDraft(null);
+    setBookError("");
+    setBookSavedMessage("");
+    setBookForm({ title: "", theme: "", include: "", tone: "Práctico" });
+  };
+
   // Filtrar biblioteca
   const allTags = [...new Set(textos.flatMap((t) => t.tags || []))].sort();
   const textosFiltrados = textos.filter((t) => {
@@ -837,1020 +1163,803 @@ ${contenidoConsolidado}
   });
 
   if (!showApp) {
-    return (
-      <div className="swiss-landing">
-        {/* Header */}
-        <header className="swiss-landing-header">
-          <div className="swiss-landing-logo" onClick={() => setShowApp(true)}>
-            <div className="swiss-logo-square" />
-            <span>Uni de la Imaginación</span>
-          </div>
-          <nav className="swiss-landing-nav">
-            <button onClick={() => { setShowApp(true); setCurrentTab("aula"); }}>Aula</button>
-            <button onClick={() => { setShowApp(true); setCurrentTab("biblioteca"); }}>Archivo</button>
-            <button onClick={() => { setShowApp(true); setCurrentTab("examenes"); }}>Exámenes</button>
-            <button onClick={() => { setShowApp(true); setCurrentTab("libro"); }}>Compilador</button>
-            <button onClick={() => document.getElementById("blog")?.scrollIntoView({ behavior: "smooth" })}>Blog</button>
-          </nav>
-          <button className="swiss-landing-cta" onClick={() => setShowApp(true)}>
-            Ingresar al Portal
-          </button>
-        </header>
-
-        {/* Hero Section */}
-        <div className="swiss-landing-hero">
-          {/* Left Column */}
-          <div className="swiss-landing-hero-left">
-            <h1 className="swiss-landing-title">
-              TRANSFORMA<br />
-              LA MANERA<br />
-              EN QUE OPERA<br />
-              TU REALIDAD
-            </h1>
-            <div className="swiss-landing-divider-bar" />
-            <p className="swiss-landing-description">
-              La Universidad de la Imaginación te proporciona las herramientas fundamentales basadas en las enseñanzas de Neville Goddard para reestructurar tu conciencia, comprender la Ley y la Promesa, y manifestar tus objetivos con precisión matemática.
-            </p>
-            <button className="swiss-landing-enter-btn" onClick={() => setShowApp(true)}>
-              Ingresar al Portal →
-            </button>
-          </div>
-
-          {/* Right Column */}
-          <div className="swiss-landing-hero-right swiss-grid-pattern">
-            <div className="swiss-bauhaus-composition">
-              {/* Black Rectangle */}
-              <div className="swiss-bauhaus-rect" />
-              
-              {/* Red Circle (using SVG to bypass border-radius reset) */}
-              <svg className="swiss-bauhaus-circle" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="48" fill="var(--swiss-accent)" />
-              </svg>
-              
-              {/* Hollow Triangle */}
-              <svg className="swiss-bauhaus-triangle" viewBox="0 0 100 100">
-                <polygon points="90,15 15,50 90,85" fill="none" stroke="black" strokeWidth="6" />
-              </svg>
-              
-              {/* Lines */}
-              <div className="swiss-bauhaus-line-black" />
-              <div className="swiss-bauhaus-line-red" />
+    // ── AUTH SCREEN ──────────────────────────────────────────────
+    if (showLoginModal) {
+      return (
+        <div className="ods-auth">
+          {/* Brand panel */}
+          <aside className="ods-auth__brand">
+            <Image
+              src="/odiseo/odiseo-mark.png"
+              alt=""
+              width={480}
+              height={480}
+              className="ods-auth__brand-mark"
+            />
+            <div className="ods-auth__brand-head">
+              <button
+                className="odiseo-pill"
+                style={{ background: "transparent", borderColor: "rgba(255,255,255,.3)", color: "#fff" }}
+                onClick={() => setShowLoginModal(false)}
+              >
+                ← Volver
+              </button>
             </div>
-            <div className="swiss-bauhaus-caption">
-              <span>Universidad de la Imaginación</span>
+            <div className="ods-auth__brand-copy">
+              <span style={{ fontFamily: "var(--ods-font)", fontWeight: 600, fontSize: 12, letterSpacing: ".18em", textTransform: "uppercase", color: "var(--ods-accent)", display: "block", marginBottom: 8 }}>
+                Universidad de la Imaginación
+              </span>
+              <h2>Recordá quién estás eligiendo ser</h2>
+              <p>Conversá, estudiá, practicá y guardá memoria de tu proceso. Tu primera consulta al Coach es gratis.</p>
             </div>
-          </div>
-        </div>
-
-        {/* Stats Section */}
-        <section className="swiss-stats-section">
-          {[
-            { num: "621", label: "Textos en el Archivo" },
-            { num: "3", label: "Guías de Estudio Activas" },
-            { num: "100%", label: "Basado en la Ley y la Promesa" },
-            { num: "84", label: "Países Conectados" },
-          ].map((stat, i) => (
-            <div key={i} className="swiss-stat-card" onClick={() => { setShowApp(true); setCurrentTab("biblioteca"); }}>
-              <div className="swiss-stat-number-wrapper">
-                <span className="swiss-stat-number">{stat.num}</span>
-                <span className="swiss-stat-plus">+</span>
-              </div>
-              <div className="swiss-stat-label">{stat.label}</div>
+            <div className="ods-auth__brand-foot" style={{ display: "flex", gap: 20 }}>
+              <span style={{ fontFamily: "var(--ods-mono)", fontSize: 12.5 }}>odiseo.online</span>
+              <span>Basado en las enseñanzas de Neville Goddard</span>
             </div>
-          ))}
-        </section>
+          </aside>
 
-        {/* Product Detail Section */}
-        <section className="swiss-detail-section">
-          <div className="swiss-detail-left">
-            <div className="swiss-detail-composition-card swiss-detail-composition-1">
-              <div className="swiss-composition-circle" />
-            </div>
-            <div className="swiss-detail-composition-card swiss-detail-composition-2">
-              <div className="swiss-composition-line" />
-            </div>
-            <div className="swiss-detail-composition-card swiss-detail-composition-3">
-              <div className="swiss-composition-text">LEY</div>
-            </div>
-            <div className="swiss-detail-composition-card swiss-detail-composition-4">
-              <div className="swiss-composition-square-red" />
-            </div>
-          </div>
-          <div className="swiss-detail-right">
-            <div className="swiss-section-number">01. CONCEPTO CLAVE</div>
-            <h2 className="swiss-detail-title">EL PODER DE LA ASUNCIÓN CONSCIENTE</h2>
-            <p className="swiss-detail-text">
-              La asunción de que tu deseo ya se ha cumplido le da realidad objetiva a tu asunción. En la Universidad de la Imaginación, no enseñamos teoría abstracta; te proporcionamos el método exacto para alterar tu estado de conciencia y manifestar cualquier estado en este plano físico.
-            </p>
-          </div>
-        </section>
+          {/* Form panel */}
+          <main className="ods-auth__form-side">
+            <div className="ods-auth__form-card">
+              <h1>
+                {loginMode === "login" ? "Bienvenido de vuelta" : "Entrá gratuitamente con Google o tu mail"}
+              </h1>
+              <p className="ods-auth__form-sub">
+                {loginMode === "login" ? "Ingresá para continuar tu práctica." : "Creá tu cuenta en segundos. Sin verificación por correo."}
+              </p>
 
-        {/* Features Section */}
-        <section className="swiss-features-section">
-          <div className="swiss-features-left">
-            <div className="swiss-features-sticky">
-              <div className="swiss-section-number">02. HERRAMIENTAS</div>
-              <h2 className="swiss-features-title">EL SISTEMA DE LA IMAGINACIÓN</h2>
-            </div>
-          </div>
-          <div className="swiss-features-right">
-            {[
-              {
-                num: "01",
-                name: "AULA INTERACTIVA CON IA",
-                desc: "Haz consultas al Profesor o al Cuentacuentos para resolver cualquier duda doctrinal sobre la Ley y la Promesa en tiempo real.",
-                tab: "aula" as TabId,
-              },
-              {
-                num: "02",
-                name: "ARCHIVO DE TEXTOS",
-                desc: "Navega y lee cada uno de los 621 documentos y lecciones recopiladas de Neville Goddard con búsqueda interactiva.",
-                tab: "biblioteca" as TabId,
-              },
-              {
-                num: "03",
-                name: "EVALUACIÓN Y EXÁMENES",
-                desc: "Pon a prueba tu asunción y tu nivel de comprensión conceptual a través de exámenes rápidos autocalificables.",
-                tab: "examenes" as TabId,
-              },
-              {
-                num: "04",
-                name: "COMPILADOR DE LIBROS",
-                desc: "Consolida tus conversaciones y resultados académicos directamente en un Libro de Luz descargable en formato Markdown.",
-                tab: "libro" as TabId,
-              },
-            ].map((feat, i) => (
-              <div key={i} className="swiss-feature-card" onClick={() => { setShowApp(true); setCurrentTab(feat.tab); }}>
-                <div className="swiss-feature-info">
-                  <span className="swiss-feature-num">{feat.num}.</span>
-                  <h3 className="swiss-feature-name">{feat.name}</h3>
-                  <p className="swiss-feature-desc">{feat.desc}</p>
-                </div>
-                <div className="swiss-feature-arrow">→</div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* How It Works Section */}
-        <section className="swiss-how-section">
-          <div className="swiss-how-header">
-            <div className="swiss-section-number">03. MÉTODO</div>
-            <h2 className="swiss-how-title">CÓMO OPERAR LA LEY</h2>
-          </div>
-          <div className="swiss-how-grid">
-            {[
-              {
-                num: "1",
-                title: "ASUME EL ESTADO",
-                desc: "Define claramente tu deseo. Cierra los ojos y asume el sentimiento de que tu deseo ya se ha cumplido en tu imaginación.",
-              },
-              {
-                num: "2",
-                title: "IGNORA LOS SENTIDOS",
-                desc: "Mantén tu lealtad radical a la reality invisible asumida, ignorando la evidencia contraria del plano físico tridimensional.",
-              },
-              {
-                num: "3",
-                title: "VIVE LA PROMESA",
-                desc: "Tu asunción persistente se materializará de manera natural. Despierta al creador divino dentro de ti.",
-              },
-            ].map((step, i) => (
-              <div key={i} className="swiss-how-card">
-                <div className="swiss-how-watermark">{step.num}</div>
-                <h3 className="swiss-how-card-title">{step.title}</h3>
-                <p className="swiss-how-card-desc">{step.desc}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Benefits Section */}
-        <section className="swiss-benefits-section">
-          <div className="swiss-benefits-left">
-            <div className="swiss-section-number">04. VENTAJAS</div>
-            <h2 className="swiss-benefits-title">BENEFICIOS DE LA PRÁCTICA</h2>
-          </div>
-          <div className="swiss-benefits-right">
-            {[
-              {
-                num: "I",
-                name: "PRECISIÓN MATEMÁTICA",
-                desc: "Nuestros métodos eliminan las conjeturas, alineándote directamente con las leyes psicológicas del subconsciente descubiertas por Neville Goddard.",
-              },
-              {
-                num: "II",
-                name: "SOPORTE IA PERSONALIZADO",
-                desc: "Recibe aclaraciones con referencias específicas a conferencias originales y pasajes del autor de manera inmediata.",
-              },
-              {
-                num: "III",
-                name: "CREACIÓN PORTABLE",
-                desc: "Genera y descarga tus manuales de estudio directamente en tu dispositivo para estudiar y aplicar la ley en cualquier lugar.",
-              },
-            ].map((ben, i) => (
-              <div key={i} className="swiss-benefit-item" onClick={() => setShowApp(true)}>
-                <div className="swiss-benefit-num-box">{ben.num}</div>
-                <div className="swiss-benefit-content">
-                  <h3 className="swiss-benefit-name">{ben.name}</h3>
-                  <p className="swiss-benefit-desc">{ben.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Testimonials Section */}
-        <section className="swiss-testimonials-section">
-          <div className="swiss-testimonials-header">
-            <div className="swiss-section-number">05. TESTIMONIOS</div>
-            <h2 className="swiss-testimonials-title">VOCES DE LA ASUNCIÓN</h2>
-          </div>
-          <div className="swiss-testimonials-grid">
-            {[
-              {
-                quote: "EL CAMBIO EN MI CONCIENCIA REDISEÑÓ POR COMPLETO MI REALIDAD PROFESIONAL Y PERSONAL. LA LEY FUNCIONA.",
-                name: "GERMÁN GONZÁLEZ",
-                role: "ALUMNO PRO",
-              },
-              {
-                quote: "LA RESPUESTA DEL PROFESOR IA FUE CLARA E INSTANTÁNEA. LA MEJOR HERRAMIENTA PARA ESTUDIAR A NEVILLE.",
-                name: "MARÍA S.",
-                role: "ALUMNA DE LA PROMESA",
-              },
-              {
-                quote: "COMPILAR MIS PREGUNTAS Y DIÁLOGOS EN UN LIBRO COMPACTO ME AYUDÓ A INTERIORIZAR EL SENTIMIENTO.",
-                name: "ESTEBAN R.",
-                role: "INVESTIGADOR INDEPENDIENTE",
-              },
-            ].map((test, i) => (
-              <div key={i} className="swiss-testimonial-card" onClick={() => setShowApp(true)}>
-                <div className="swiss-testimonial-quote">“{test.quote}”</div>
-                <div className="swiss-testimonial-author">
-                  <span className="swiss-testimonial-name">{test.name}</span>
-                  <span className="swiss-testimonial-role">{test.role}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Pricing Section */}
-        <section className="swiss-pricing-section">
-          <div className="swiss-pricing-header">
-            <div className="swiss-section-number">06. MATRÍCULA</div>
-            <h2 className="swiss-pricing-title">PLANES DE ESTUDIO</h2>
-          </div>
-          <div className="swiss-pricing-grid">
-            {[
-              {
-                tier: "ESTUDIANTE",
-                price: "$0",
-                period: "gratis para siempre",
-                desc: "Ideal para iniciar tu camino y explorar las bases conceptuales de la asunción.",
-                features: ["10 consultas de chat al mes", "Archivo de textos básicos", "Exámenes conceptuales", "Compilación básica"],
-                highlight: false,
-              },
-              {
-                tier: "PORTAL PRO",
-                price: "$19",
-                period: "facturado mensualmente",
-                desc: "Acceso ilimitado para alumnos comprometidos con la reestructuración de su conciencia.",
-                features: ["Consultas ilimitadas con IA", "Acceso a las 621 conferencias", "Compilador de Libros ilimitado", "Soporte prioritario"],
-                highlight: true,
-              },
-              {
-                tier: "PATROCINADOR",
-                price: "$49",
-                period: "donación mensual",
-                desc: "Apoya a la comunidad y patrocina becas de estudio para otros miembros en el portal.",
-                features: ["Acceso total ilimitado", "Sesiones grupales de estudio", "Insignia de patrocinador", "Financiamiento de becas"],
-                highlight: false,
-              },
-            ].map((plan, i) => (
-              <div key={i} className={`swiss-pricing-card ${plan.highlight ? "swiss-pricing-card--highlighted" : ""}`}>
-                {plan.highlight && <span className="swiss-pricing-tag">Popular</span>}
-                <div>
-                  <h3 className="swiss-pricing-tier">{plan.tier}</h3>
-                  <div className="swiss-pricing-price">
-                    {plan.price}
-                    <span className="swiss-pricing-period"> / {plan.period}</span>
-                  </div>
-                  <p className="swiss-pricing-desc">{plan.desc}</p>
-                  <ul className="swiss-pricing-features">
-                    {plan.features.map((feat, fi) => (
-                      <li key={fi} className="swiss-pricing-feature-item">{feat}</li>
-                    ))}
-                  </ul>
-                </div>
-                <button className="swiss-pricing-btn" onClick={() => setShowApp(true)}>
-                  Comenzar Ahora →
+              {/* Tabs */}
+              <div className="ods-auth__tabs">
+                <button
+                  className={`ods-auth__tab${loginMode === "register" ? " ods-auth__tab--on" : ""}`}
+                  onClick={() => { setLoginMode("register"); setLoginError(""); }}
+                >
+                  Crear cuenta
+                </button>
+                <button
+                  className={`ods-auth__tab${loginMode === "login" ? " ods-auth__tab--on" : ""}`}
+                  onClick={() => { setLoginMode("login"); setLoginError(""); }}
+                >
+                  Ingresar
                 </button>
               </div>
-            ))}
-          </div>
-        </section>
 
-        {/* FAQ Section */}
-        <section className="swiss-faq-section">
-          <div className="swiss-faq-header">
-            <div className="swiss-section-number">07. SOPORTE</div>
-            <h2 className="swiss-faq-title">PREGUNTAS FRECUENTES</h2>
-          </div>
-          <div className="swiss-faq-grid">
-            {[
-              {
-                q: "¿Qué es la ley de la asunción?",
-                a: "Es la enseñanza de que asumir el sentimiento del deseo cumplido provoca que la mente subconsciente proyecte y materialice ese estado en tu realidad física externa.",
-                num: "01",
-              },
-              {
-                q: "¿Quién fue Neville Goddard?",
-                a: "Un conferencista y místico del siglo XX cuyas enseñanzas se enfocan en que la imaginación humana es Dios operando en el hombre, y que creamos nuestra realidad mediante nuestra atención y conciencia.",
-                num: "02",
-              },
-              {
-                q: "¿Cómo funciona el compilador de libros?",
-                a: "El compilador reúne de forma estructurada tus conversaciones con el Instructor/Narrador y tus resultados de exámenes en la base de datos para generar un archivo Markdown único y descargable.",
-                num: "03",
-              },
-              {
-                q: "¿El portal es de acceso inmediato?",
-                a: "Sí. Registrarte de forma gratuita te otorga acceso inmediato al Aula Virtual, a las lecturas seleccionadas del Archivo de Luz y a las pruebas conceptuales.",
-                num: "04",
-              },
-            ].map((faq, i) => (
-              <div key={i} className="swiss-faq-card">
-                <div className="swiss-faq-top">
-                  <div className="swiss-faq-question-wrapper">
-                    <span className="swiss-faq-num">{faq.num}</span>
-                    <h3 className="swiss-faq-question">{faq.q}</h3>
+              {/* Google */}
+              <button className="ods-auth__google" onClick={handleGoogleLogin}>
+                <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+                  <path d="M17.64 9.2c0-.637-.057-1.25-.164-1.84H9v3.48h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908C16.658 14.013 17.64 11.705 17.64 9.2z" fill="#4285F4"/>
+                  <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+                  <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+                  <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+                </svg>
+                {loginMode === "register" ? "Entrar con Google" : "Ingresar con Google"}
+              </button>
+
+              <div className="ods-auth__divider">o con tu email</div>
+
+              <form
+                style={{ display: "flex", flexDirection: "column", gap: 16 }}
+                onSubmit={(e) => { e.preventDefault(); loginMode === "register" ? handleEmailRegister() : handleEmailLogin(); }}
+              >
+                {loginMode === "register" && (
+                  <div className="ods-auth__field">
+                    <label className="ods-auth__label">Nombre</label>
+                    <input
+                      className="ods-auth__input"
+                      type="text"
+                      placeholder="Tu nombre"
+                      value={loginForm.name}
+                      onChange={(e) => setLoginForm({ ...loginForm, name: e.target.value })}
+                      autoComplete="name"
+                    />
                   </div>
-                  <span className="swiss-faq-icon">+</span>
+                )}
+                <div className="ods-auth__field">
+                  <label className="ods-auth__label">Email</label>
+                  <input
+                    className="ods-auth__input"
+                    type="email"
+                    placeholder="tu@email.com"
+                    value={loginForm.email}
+                    onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
+                    autoComplete="email"
+                  />
                 </div>
-                <p className="swiss-faq-answer">{faq.a}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Blog Section */}
-        <section id="blog" className="swiss-blog-section">
-          <div className="swiss-blog-sidebar">
-            <div>
-              <div className="swiss-section-number">08. BLOG</div>
-              <h2 className="swiss-blog-sidebar-title">Notas de Anima</h2>
-              <p className="swiss-blog-sidebar-text">
-                Ideas breves sobre imaginación, práctica diaria, planes guiados y diseño de libros personales.
-              </p>
-            </div>
-            <button className="swiss-landing-cta" style={{ width: "100%", marginTop: "32px" }} onClick={() => document.getElementById("blog")?.scrollIntoView({ behavior: "smooth" })}>
-              Ver notas
-            </button>
-          </div>
-          <div className="swiss-blog-grid">
-            {[
-              {
-                date: "04 JUN 2026",
-                title: "CÓMO DISEÑAR UN PLAN DE IMAGINACIÓN DE 7 DÍAS",
-              },
-              {
-                date: "28 MAY 2026",
-                title: "MATERIAL DE ESTUDIO: CÓMO LEER SIN DISPERSARTE",
-              },
-              {
-                date: "15 MAY 2026",
-                title: "DE CONVERSACIÓN A LIBRO PERSONAL: EL MÉTODO ANIMA",
-              },
-            ].map((post, i) => (
-              <div key={i} className="swiss-blog-card">
-                <div>
-                  <span className="swiss-blog-date">{post.date}</span>
-                  <h3 className="swiss-blog-title">{post.title}</h3>
+                <div className="ods-auth__field">
+                  <label className="ods-auth__label">Contraseña</label>
+                  <input
+                    className="ods-auth__input"
+                    type="password"
+                    placeholder="••••••••"
+                    value={loginForm.password}
+                    onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                    autoComplete={loginMode === "login" ? "current-password" : "new-password"}
+                  />
                 </div>
-                <span className="swiss-blog-link">Leer nota →</span>
-              </div>
-            ))}
-          </div>
-        </section>
+                {loginError && (
+                  <p style={{ color: "var(--ods-accent)", fontSize: 13, fontWeight: 600, margin: 0 }}>{loginError}</p>
+                )}
+                <button type="submit" className="ods-auth__submit" disabled={loginLoading}>
+                  {loginLoading ? "Cargando..." : loginMode === "register" ? "Crear cuenta gratis" : "Ingresar"}
+                </button>
+              </form>
 
-        {/* Footer */}
-        <footer className="swiss-footer">
-          <div className="swiss-footer-grid">
-            <div className="swiss-footer-brand">
-              <h2 className="swiss-footer-logo-title">Anima</h2>
-              <p className="swiss-footer-tagline">
-                Tu compañero de imaginación. Un espacio privado para practicar, recibir seguimiento y diseñar tu libro personal.
+              <p style={{ fontSize: 12.5, color: "var(--ods-g-500)", marginTop: 16, textAlign: "center", lineHeight: 1.5 }}>
+                Al entrar aceptás los{" "}
+                <a href="#" style={{ color: "var(--ods-ink)", textDecoration: "underline" }}>términos</a>
+                {" "}y la{" "}
+                <a href="#" style={{ color: "var(--ods-ink)", textDecoration: "underline" }}>política de privacidad</a>.
               </p>
+
+              <div className="ods-auth__switch">
+                <span style={{ color: "var(--ods-g-700)", fontSize: 14 }}>
+                  {loginMode === "register" ? "¿Ya tenés cuenta? " : "¿Todavía no tenés cuenta? "}
+                </span>
+                <button
+                  type="button"
+                  style={{ border: 0, background: "none", fontWeight: 700, color: "var(--ods-accent)", fontSize: 14, cursor: "pointer" }}
+                  onClick={() => { setLoginMode(loginMode === "register" ? "login" : "register"); setLoginError(""); }}
+                >
+                  {loginMode === "register" ? "Ingresar" : "Crear cuenta gratis"}
+                </button>
+              </div>
             </div>
+          </main>
+        </div>
+      );
+    }
+
+    // ── HOME / LANDING ───────────────────────────────────────────
+    // Placeholder pre-mount: server y cliente renderizan lo mismo → hydration OK.
+    // La extensión no tiene nada que modificar en el placeholder.
+    // Después del mount el update es reconcile normal, no hydration.
+    if (!mounted) {
+      return <div style={{ background: "var(--ods-paper)", minHeight: "100dvh" }} />;
+    }
+
+    const goToLogin = () => { setLoginMode("register"); setShowLoginModal(true); };
+    const landingTools = [
+      { icon: <MessageSquareText size={22} />, title: "Coach", desc: "Trabajá tu deseo con una guía directa." },
+      { icon: <Sparkles size={22} />, title: "Narrador", desc: "Recibí explicaciones vivas, ejemplos y escenas guiadas." },
+      { icon: <ScrollText size={22} />, title: "Testimonios y casos", desc: "Buscá historias reales de Neville relacionadas con lo que querés vivir." },
+      { icon: <Cross size={22} />, title: "Biblia metafísica", desc: "Entendé símbolos bíblicos como estados y movimientos de la conciencia." },
+      { icon: <HelpCircle size={22} />, title: "Preguntas y respuestas", desc: "Generá preguntas para integrar una enseñanza, una escena o una conversación." },
+      { icon: <Calendar size={22} />, title: "Planes", desc: "Creá prácticas de 7, 15 o 30 días." },
+      { icon: <FileText size={22} />, title: "Diario íntimo", desc: "Registrá estados, avances, dudas y cambios internos." },
+      { icon: <BookOpen size={22} />, title: "Mi libro", desc: "Convertí tu proceso en capítulos, escenas y reflexiones." },
+      { icon: <History size={22} />, title: "Memoria", desc: "Odiseo recuerda deseos, estados, conversaciones y materiales importantes." },
+      { icon: <Library size={22} />, title: "Fuentes de Neville", desc: "Conferencias, libros y fragmentos que alimentan respuestas y prácticas." },
+    ];
+
+    return (
+      <div style={{ background: "var(--ods-paper)", overflowX: "hidden" }} suppressHydrationWarning>
+
+        {/* ── NAV ── */}
+        <header className="ods-pub-nav">
+          <div className="ods-pub-nav__inner">
+            <a className="ods-logo" href="#">
+              <Image src="/odiseo/odiseo-badge.png" alt="Odiseo" width={36} height={36} className="ods-logo__mark" />
+              <span className="ods-logo__wordmark">
+                <span className="ods-logo__name">Odiseo</span>
+                <span className="ods-logo__tagline">Tu compañero de imaginación</span>
+              </span>
+            </a>
+            <nav className="ods-pub-nav__links">
+              <a href="#que-es">Qué es</a>
+              <a href="#herramientas">Herramientas</a>
+              <a href="#como">Cómo funciona</a>
+              <a href="#precios">Precios</a>
+              <button onClick={() => { setLoginMode("login"); setShowLoginModal(true); }}>Ingresar</button>
+            </nav>
+            <div className="ods-pub-nav__cta">
+              <button className="ods-btn ods-btn--ghost ods-btn--sm" style={{ display: "none" } /* hidden on mobile */} onClick={() => { setLoginMode("login"); setShowLoginModal(true); }}>
+                Ingresar
+              </button>
+              <button className="ods-btn ods-btn--accent ods-btn--sm" onClick={goToLogin}>
+                Empezar gratis
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* ── HERO ── */}
+        <section className="ods-pub-hero" id="que-es">
+          <div className="ods-pub-hero__grid">
             <div>
-              <h4 className="swiss-footer-col-title">Portal</h4>
-              <ul className="swiss-footer-links">
-                <li><button onClick={() => { setShowApp(true); setCurrentTab("aula"); }}>Aula</button></li>
-                <li><button onClick={() => { setShowApp(true); setCurrentTab("biblioteca"); }}>Archivo</button></li>
-                <li><button onClick={() => { setShowApp(true); setCurrentTab("examenes"); }}>Exámenes</button></li>
-                <li><button onClick={() => { setShowApp(true); setCurrentTab("libro"); }}>Compilador</button></li>
-              </ul>
+              <span className="ods-pub-kicker">Estudio · Práctica · Memoria</span>
+              <h1 className="ods-pub-hero__title" style={{ marginTop: 18 }}>Odiseo</h1>
+              <p className="ods-pub-hero__slogan">Tu <b>compañero</b> de imaginación</p>
+              <p className="ods-pub-hero__lead">
+                Un espacio para conversar, estudiar, practicar y recordar quién estás eligiendo ser.
+              </p>
+              <p className="ods-pub-hero__support">
+                Odiseo te ayuda a trabajar tu deseo, comprender las enseñanzas de Neville, guardar memoria de tu proceso y convertir tus conversaciones en planes, preguntas, escenas y libros propios.
+              </p>
+              <div className="ods-pub-ask">
+                <input
+                  type="text"
+                  placeholder="¿Qué querés trabajar hoy? Ej: vivir desde el final, sostener mi deseo…"
+                  onKeyDown={(e) => { if (e.key === "Enter") goToLogin(); }}
+                />
+                <button className="ods-btn ods-btn--dark ods-btn--sm" onClick={goToLogin}>
+                  Empezar →
+                </button>
+              </div>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 16, alignItems: "center" }}>
+                <a href="#como" className="ods-btn ods-btn--ghost ods-btn--sm">Ver cómo funciona</a>
+                <span style={{ fontSize: 13, color: "var(--ods-g-500)" }}>Gratis para empezar · sin tarjeta</span>
+              </div>
             </div>
-            <div>
-              <h4 className="swiss-footer-col-title">Legal</h4>
-              <ul className="swiss-footer-links">
-                <li><a href="#terminos" onClick={(e) => { e.preventDefault(); alert("Universidad de la Imaginación - Ley y Promesa"); }}>Términos de Uso</a></li>
-                <li><a href="#privacidad" onClick={(e) => { e.preventDefault(); alert("Universidad de la Imaginación - Privacidad Respetada"); }}>Privacidad</a></li>
-              </ul>
-            </div>
-            <div className="swiss-footer-newsletter">
-              <h4 className="swiss-footer-col-title">Correspondencia</h4>
-              <input
-                type="email"
-                placeholder="TU-CORREO@DOMINIO.COM"
-                className="swiss-footer-email-input"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    alert("¡Suscrito a la correspondencia!");
-                    e.currentTarget.value = "";
-                  }
-                }}
+            {/* Demo chat card */}
+            <div style={{ position: "relative" }}>
+              <div className="ods-pub-hero__demo">
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span className="ods-badge ods-badge--accent">EN VIVO</span>
+                  <span style={{ fontFamily: "var(--ods-mono)", fontSize: 11, color: "var(--ods-g-500)", letterSpacing: ".06em" }}>COACH</span>
+                </div>
+                <div style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div style={{ alignSelf: "flex-end", background: "var(--ods-ink)", color: "#fff", padding: "12px 16px", borderRadius: "18px 18px 4px 18px", fontSize: 14.5, maxWidth: "85%" }}>
+                    Quiero casarme y siento que tarda.
+                  </div>
+                  <div style={{ alignSelf: "flex-start", background: "var(--ods-paper)", border: "1.5px solid var(--ods-g-300)", padding: "12px 16px", borderRadius: "18px 18px 18px 4px", fontSize: 14.5, maxWidth: "92%" }}>
+                    La tardanza no vive en el hecho, vive en la posición desde la que estás mirando. Ocupá el estado del deseo cumplido.
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 4 }}>
+                    {["Profundizar", "Crear plan", "Guardar en diario"].map((c) => (
+                      <span key={c} style={{ display: "inline-flex", alignItems: "center", fontWeight: 500, fontSize: 11.5, border: "1.5px solid var(--ods-ink)", borderRadius: 999, padding: "6px 11px", background: "var(--ods-paper)" }}>{c}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <Image
+                src="/odiseo/odiseo-mark.png"
+                alt=""
+                width={92}
+                height={92}
+                style={{ position: "absolute", right: -14, top: -30, filter: "drop-shadow(0 6px 14px rgba(0,0,0,.15))" }}
               />
             </div>
           </div>
-          <div className="swiss-footer-bottom">
-            <span className="swiss-footer-copy">
-              © {new Date().getFullYear()} UNIVERSIDAD DE LA IMAGINACIÓN. BASADO EN LAS ENSEÑANZAS DE NEVILLE GODDARD.
-            </span>
-            <div className="swiss-footer-socials">
-              <button className="swiss-footer-social-btn" onClick={() => alert("Compartir en Twitter")} aria-label="Twitter">TW</button>
-              <button className="swiss-footer-social-btn" onClick={() => alert("Compartir en LinkedIn")} aria-label="LinkedIn">LI</button>
-              <button className="swiss-footer-social-btn" onClick={() => alert("Compartir en GitHub")} aria-label="GitHub">GH</button>
+        </section>
+
+        {/* ── MARQUEE ── */}
+        <div className="ods-pub-marquee" aria-hidden="true">
+          <div className="ods-pub-marquee__track">
+            {(["Coach","Narrador","Testimonios","Biblia metafísica","Preguntas","Planes","Diario íntimo","Mi libro","Memoria","Fuentes de Neville"] as string[]).flatMap((item) => [item, item]).map((item, i) => (
+              <span key={i}>{item}</span>
+            ))}
+          </div>
+        </div>
+
+        {/* ── CÓMO FUNCIONA ── */}
+        <div className="ods-pub-shell">
+          <section className="ods-pub-sec" id="como" style={{ borderBottom: "none" }}>
+            <div className="ods-pub-sec__head">
+              <div>
+                <span className="ods-pub-kicker">01 — Cómo funciona</span>
+                <h2>Tres pasos para entrar en tu práctica</h2>
+              </div>
+              <p>Odiseo no solo responde. Recuerda, ordena, pregunta, narra y transforma tu proceso en práctica.</p>
+            </div>
+            <div className="ods-pub-steps">
+              {[
+                { n: "1", title: "Escribís lo que querés trabajar", desc: "Un deseo, una duda, una escena, una lectura o una situación interna." },
+                { n: "2", title: "Odiseo te acompaña", desc: "Recibí guía directa, explicación narrativa, preguntas, planes, testimonios o símbolos bíblicos relacionados." },
+                { n: "3", title: "Guardás tu proceso", desc: "Todo puede convertirse en memoria, diario, plan, mensaje o capítulo de tu propio libro." },
+              ].map((step) => (
+                <div key={step.n} className="ods-pub-step">
+                  <div className="ods-pub-step__n">{step.n}</div>
+                  <h3>{step.title}</h3>
+                  <p>{step.desc}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        {/* ── HERRAMIENTAS ── */}
+        <div style={{ background: "var(--ods-g-100)", borderTop: "2px solid var(--ods-ink)", borderBottom: "2px solid var(--ods-ink)" }}>
+          <div className="ods-pub-shell">
+            <section className="ods-pub-sec" id="herramientas" style={{ borderBottom: "none" }}>
+              <div className="ods-pub-sec__head">
+                <div>
+                  <span className="ods-pub-kicker">02 — Herramientas</span>
+                  <h2>Un sistema completo de imaginación</h2>
+                </div>
+                <p>Diez herramientas que trabajan juntas y comparten una misma memoria de tu proceso.</p>
+              </div>
+              <div className="ods-pub-tools">
+                {landingTools.map((t) => (
+                  <div key={t.title} className="ods-pub-tool" onClick={goToLogin}>
+                    <div className="ods-pub-tool__ico">{t.icon}</div>
+                    <h3>{t.title}</h3>
+                    <p>{t.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+        </div>
+
+        {/* ── UNIVERSIDAD ── */}
+        <section className="ods-pub-uni">
+          <div className="ods-pub-uni__inner">
+            <div>
+              <span className="ods-pub-kicker" style={{ color: "rgba(255,255,255,.5)" }}>Dentro de Odiseo</span>
+              <h2 style={{ marginTop: 16 }}>Universidad de la Imaginación</h2>
+              <p>Dentro de Odiseo vive la Universidad de la Imaginación: un espacio privado para estudiar, practicar, crear memoria, leer fuentes, responder preguntas y construir tu propio camino de imaginación.</p>
+              <button className="ods-btn ods-btn--accent ods-btn--lg" style={{ marginTop: 30 }} onClick={goToLogin}>
+                Entrar al espacio de estudio
+              </button>
+            </div>
+            <div className="ods-pub-uni__mark">
+              <Image src="/odiseo/odiseo-mark.png" alt="" width={360} height={360} style={{ width: "min(80%, 360px)", height: "auto" }} />
+            </div>
+          </div>
+        </section>
+
+        {/* ── AUTORES ── */}
+        <div className="ods-pub-shell">
+          <section className="ods-pub-sec" style={{ borderBottom: "none" }}>
+            <div className="ods-pub-sec__head">
+              <div>
+                <span className="ods-pub-kicker">03 — Autores</span>
+                <h2>Comenzamos con Neville</h2>
+              </div>
+              <p>Odiseo comienza con Neville Goddard. Próximamente se sumarán otros autores y líneas de estudio.</p>
+            </div>
+            <div className="ods-pub-authors">
+              <div className="ods-pub-author ods-pub-author--active">
+                <div className="ods-pub-author__ph">N</div>
+                <h3>Neville Goddard</h3>
+                <span className="ods-pub-author__status">● Autor activo</span>
+              </div>
+              {(["Joseph Murphy", "Emmet Fox", "Florence S. Shinn"] as string[]).map((name) => (
+                <div key={name} className="ods-pub-author ods-pub-author--soon">
+                  <div className="ods-pub-author__ph">{name[0]}</div>
+                  <h3>{name}</h3>
+                  <span className="ods-pub-author__status">Próximamente</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        {/* ── PRECIOS ── */}
+        <div className="ods-pub-shell">
+          <section className="ods-pub-sec" id="precios" style={{ borderBottom: "none" }}>
+            <div className="ods-pub-sec__head">
+              <div>
+                <span className="ods-pub-kicker">04 — Precios</span>
+                <h2>Elegí cómo querés caminar</h2>
+              </div>
+              <p>Desde una primera consulta gratis hasta acceso de por vida. Sin vueltas.</p>
+            </div>
+            <div className="ods-pub-plans">
+              {([
+                { name: "Prueba inicial", price: "USD 0", desc: "Para entrar, probar Odiseo y hacer tu primera consulta.", items: ["Acceso al dashboard", "1 consulta inicial al Coach", "Vista limitada de herramientas", "Memoria básica visual", "Acceso preview a fuentes"], cta: "Empezar gratis", v: "ghost", feat: false },
+                { name: "Práctica 72 hs", price: "USD 5", desc: "Para probar Odiseo durante tres días con una práctica completa.", items: ["Coach limitado", "Narrador", "Diario íntimo", "1 plan corto · preguntas", "Memoria · preview Telegram"], cta: "Activar 72 horas", v: "dark", feat: false },
+                { name: "Camino Anual", price: "USD 30", unit: "/ año", badge: "Recomendado", desc: "Un año para estudiar, practicar y volver al estado elegido con continuidad.", items: ["Coach · Narrador · Preguntas", "Planes · Diario · Memoria", "Mi libro · Testimonios", "Biblia metafísica · Fuentes", "Universidad de la Imaginación"], cta: "Entrar al Camino Anual", v: "accent", feat: true },
+                { name: "Fundador", price: "USD 97", unit: "/ vida", desc: "Acceso de por vida para quienes quieren apoyar el nacimiento de Odiseo.", items: ["Acceso de por vida", "Límite superior de uso", "Mejoras principales futuras", "Prioridad en nuevas funciones", "Autores futuros incluidos"], cta: "Ser fundador", v: "dark", feat: false },
+              ] as { name: string; price: string; unit?: string; badge?: string; desc: string; items: string[]; cta: string; v: string; feat: boolean }[]).map((plan) => (
+                <div key={plan.name} className={`ods-pub-plan${plan.feat ? " ods-pub-plan--feat" : ""}`}>
+                  {plan.badge && <span className="ods-badge ods-badge--accent" style={{ alignSelf: "flex-start", marginBottom: 4 }}>{plan.badge}</span>}
+                  <div className="ods-pub-plan__name">{plan.name}</div>
+                  <div className="ods-pub-plan__price">
+                    {plan.price}
+                    {plan.unit && <small> {plan.unit}</small>}
+                  </div>
+                  <p className="ods-pub-plan__desc">{plan.desc}</p>
+                  <ul className="ods-pub-plan__list">
+                    {plan.items.map((item) => (
+                      <li key={item} className="ods-pub-plan__li">
+                        <span className="ods-pub-plan__check">✓</span>{item}
+                      </li>
+                    ))}
+                  </ul>
+                  <button className={`ods-btn ods-btn--block ods-btn--${plan.v}`} style={{ marginTop: "auto" }} onClick={goToLogin}>
+                    {plan.cta}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        {/* ── FAQ ── */}
+        <div style={{ background: "var(--ods-g-100)", borderTop: "2px solid var(--ods-ink)" }}>
+          <div className="ods-pub-shell">
+            <section className="ods-pub-sec" style={{ borderBottom: "none" }}>
+              <div className="ods-pub-sec__head">
+                <div>
+                  <span className="ods-pub-kicker">05 — Preguntas</span>
+                  <h2>Antes de empezar</h2>
+                </div>
+              </div>
+              <div className="ods-pub-faq">
+                {([
+                  { q: "¿Qué es Odiseo?", a: "Odiseo es tu compañero de imaginación: un espacio para conversar, estudiar, practicar, guardar memoria y convertir tu proceso en planes, preguntas, escenas y libros propios." },
+                  { q: "¿Está basado solo en Neville Goddard?", a: "Odiseo comienza con Neville Goddard como autor activo. Más adelante podrá sumar otros autores y líneas de estudio." },
+                  { q: "¿Qué significa vivir desde el final?", a: "Es practicar desde el estado del deseo cumplido, no como fantasía vacía, sino como una nueva posición interior desde la cual pensar, sentir y actuar." },
+                  { q: "¿Las fuentes están incluidas?", a: "Las conferencias, libros y fragmentos de Neville estarán disponibles dentro del dashboard según el plan del usuario." },
+                  { q: "¿Puedo crear mi propio libro?", a: "Sí. Odiseo puede ayudarte a ordenar conversaciones, notas, planes y escenas en un libro personal." },
+                  { q: "¿Telegram está activo?", a: "Telegram está pensado para mensajes personalizados durante el día. Puede aparecer como función incluida o próximamente según el estado del producto." },
+                ] as { q: string; a: string }[]).map((item, i) => (
+                  <details key={i} className="ods-pub-faq-item">
+                    <summary className="ods-pub-faq-q">
+                      {item.q}
+                      <span className="ods-pub-faq-q__pm">+</span>
+                    </summary>
+                    <div className="ods-pub-faq-a">{item.a}</div>
+                  </details>
+                ))}
+              </div>
+            </section>
+          </div>
+        </div>
+
+        {/* ── CTA BAND ── */}
+        <section className="ods-pub-ctaband">
+          <h2>Recordá quién estás eligiendo ser</h2>
+          <p>Tu primera consulta al Coach es gratis. Entrá y empezá tu práctica hoy.</p>
+          <button className="ods-btn ods-btn--lg ods-btn--white" onClick={goToLogin}>
+            Empezar gratis
+          </button>
+        </section>
+
+        {/* ── FOOTER ── */}
+        <footer className="ods-pub-foot">
+          <div className="ods-pub-foot__inner">
+            <div className="ods-pub-foot__top">
+              <a className="ods-logo" href="#">
+                <Image src="/odiseo/odiseo-badge.png" alt="Odiseo" width={36} height={36} className="ods-logo__mark" />
+                <span className="ods-logo__wordmark">
+                  <span className="ods-logo__name ods-logo__name--white">Odiseo</span>
+                  <span className="ods-logo__tagline" style={{ color: "#999" }}>Tu compañero de imaginación</span>
+                </span>
+              </a>
+              <div className="ods-pub-foot__links">
+                <a href="#">Términos</a>
+                <a href="#">Privacidad</a>
+                <a href="#">Contacto</a>
+                <button onClick={() => { setLoginMode("login"); setShowLoginModal(true); }}>Ingresar</button>
+              </div>
+            </div>
+            <div className="ods-pub-foot__bottom">
+              <span>© 2026 Odiseo. Basado inicialmente en las enseñanzas de Neville Goddard.</span>
+              <span style={{ fontFamily: "var(--ods-mono)" }}>odiseo.online</span>
             </div>
           </div>
         </footer>
+
       </div>
     );
   }
 
   return (
-    <div className="flux-container">
+    <div className="odiseo-app" suppressHydrationWarning>
       
-      {/* 1. SIDEBAR (Left panel en oscuro #1E1E1E) */}
-      <aside className="flux-sidebar">
-        <div>
-          {/* Logo */}
-          <div className="flux-logo" onClick={() => setShowApp(false)} style={{ cursor: "pointer" }}>
-            <div className="flux-logo-icon">
-              <GraduationCap aria-hidden="true" />
-            </div>
-            <span>Uni de la Imaginación</span>
+      {/* 1. SIDEBAR */}
+      <aside className="odiseo-sidebar">
+        <div className="odiseo-sb-logo" onClick={() => setShowApp(false)}>
+          <Image src="/odiseo/odiseo-badge.png" alt="Odiseo" width={36} height={36} />
+          <div className="odiseo-sb-logo-text">
+            <span className="odiseo-sb-logo-name">{BRAND_NAME_UPPER}</span>
+            <span className="odiseo-sb-logo-tagline">{BRAND_TAGLINE}</span>
           </div>
-
-          {/* Menú de navegación */}
-          <nav className="flux-nav">
-            <button
-              onClick={() => setCurrentTab("panel")}
-              className={`flux-nav__link ${currentTab === "panel" ? "flux-nav__link--active" : ""}`}
-            >
-              <HomeIcon aria-hidden="true" />
-              <span style={{ flex: 1 }}>Inicio</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentTab("aula")}
-              className={`flux-nav__link ${currentTab === "aula" ? "flux-nav__link--active" : ""}`}
-            >
-              <MessageSquareText aria-hidden="true" />
-              <span style={{ flex: 1 }}>Aula</span>
-              <span className="flux-nav__badge">3</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentTab("biblioteca")}
-              className={`flux-nav__link ${currentTab === "biblioteca" ? "flux-nav__link--active" : ""}`}
-            >
-              <Library aria-hidden="true" />
-              <span style={{ flex: 1 }}>Archivo</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentTab("examenes")}
-              className={`flux-nav__link ${currentTab === "examenes" ? "flux-nav__link--active" : ""}`}
-            >
-              <Trophy aria-hidden="true" />
-              <span style={{ flex: 1 }}>Sala de Exámenes</span>
-              <span className="flux-nav__badge">1</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentTab("libro")}
-              className={`flux-nav__link ${currentTab === "libro" ? "flux-nav__link--active" : ""}`}
-            >
-              <NotebookTabs aria-hidden="true" />
-              <span style={{ flex: 1 }}>Compilación</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentTab("memoria")}
-              className={`flux-nav__link ${currentTab === "memoria" ? "flux-nav__link--active" : ""}`}
-            >
-              <History aria-hidden="true" />
-              <span style={{ flex: 1 }}>Memoria</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentTab("planes")}
-              className={`flux-nav__link ${currentTab === "planes" ? "flux-nav__link--active" : ""}`}
-            >
-              <MapIconLucide aria-hidden="true" />
-              <span style={{ flex: 1 }}>Planes</span>
-            </button>
-
-            <div className="flux-nav__section-label">Agentes</div>
-
-            <button
-              onClick={() => { setCurrentTab("citas"); setAgent("profesor"); setChatMode("conversar"); }}
-              className={`flux-nav__link ${currentTab === "citas" ? "flux-nav__link--active" : ""}`}
-            >
-              <Quote aria-hidden="true" />
-              <span style={{ flex: 1 }}>Citas</span>
-            </button>
-
-            <button
-              onClick={() => { setCurrentTab("lecturas"); setAgent("profesor"); setChatMode("conversar"); }}
-              className={`flux-nav__link ${currentTab === "lecturas" ? "flux-nav__link--active" : ""}`}
-            >
-              <BookOpen aria-hidden="true" />
-              <span style={{ flex: 1 }}>Lecturas</span>
-            </button>
-
-            <button
-              onClick={() => { setCurrentTab("practicas"); setAgent("profesor"); setChatMode("conversar"); }}
-              className={`flux-nav__link ${currentTab === "practicas" ? "flux-nav__link--active" : ""}`}
-            >
-              <Lightbulb aria-hidden="true" />
-              <span style={{ flex: 1 }}>Prácticas</span>
-            </button>
-
-            <button
-              onClick={() => { setCurrentTab("biblico"); setAgent("profesor"); setChatMode("conversar"); }}
-              className={`flux-nav__link ${currentTab === "biblico" ? "flux-nav__link--active" : ""}`}
-            >
-              <Cross aria-hidden="true" />
-              <span style={{ flex: 1 }}>Bíblico</span>
-            </button>
-
-            <button
-              onClick={() => { setCurrentTab("glosario"); setAgent("profesor"); setChatMode("conversar"); }}
-              className={`flux-nav__link ${currentTab === "glosario" ? "flux-nav__link--active" : ""}`}
-            >
-              <BookText aria-hidden="true" />
-              <span style={{ flex: 1 }}>Glosario</span>
-            </button>
-
-            <button
-              onClick={() => { setCurrentTab("testimonios"); setAgent("cuentacuentos"); setChatMode("conversar"); }}
-              className={`flux-nav__link ${currentTab === "testimonios" ? "flux-nav__link--active" : ""}`}
-            >
-              <ScrollText aria-hidden="true" />
-              <span style={{ flex: 1 }}>Testimonios</span>
-            </button>
-
-            <div className="flux-nav__section-label" style={{ marginTop: "8px" }}>Cuenta</div>
-
-            <button
-              onClick={() => setCurrentTab("perfil")}
-              className={`flux-nav__link ${currentTab === "perfil" ? "flux-nav__link--active" : ""}`}
-            >
-              <UserCog aria-hidden="true" />
-              <span style={{ flex: 1 }}>Perfil</span>
-            </button>
-          </nav>
         </div>
 
-        {/* Upgrade to Pro Card */}
-        <div className="mt-auto mb-6" style={{ width: "100%" }}>
-          <div className="flux-upgrade-card">
-            <h3 className="flux-upgrade-card__title">Mejora a Pro</h3>
-            <p className="flux-upgrade-card__desc">Mejora tu cuenta para una experiencia más completa.</p>
-            <button className="flux-upgrade-card__button">
-              Mejorar Ahora
+        <nav className="odiseo-sb-nav">
+          <div className="odiseo-nav-group">
+            <span className="odiseo-nav-group__label">Principal</span>
+            <button onClick={() => setCurrentTab("panel")} className={`odiseo-nav-item${currentTab === "panel" ? " odiseo-nav-item--active" : ""}`}>
+              <HomeIcon aria-hidden="true" />
+              Inicio
             </button>
           </div>
+
+          <div className="odiseo-nav-group">
+            <span className="odiseo-nav-group__label">Conversar</span>
+            <button onClick={() => { setCurrentTab("aula"); setAgent("profesor"); setChatMode("conversar"); }} className={`odiseo-nav-item${currentTab === "aula" ? " odiseo-nav-item--active" : ""}`}>
+              <MessageSquareText aria-hidden="true" />
+              Coach
+            </button>
+            <button onClick={() => setCurrentTab("narrador")} className={`odiseo-nav-item${currentTab === "narrador" ? " odiseo-nav-item--active" : ""}`}>
+              <Sparkles aria-hidden="true" />
+              Narrador
+            </button>
+          </div>
+
+          <div className="odiseo-nav-group">
+            <span className="odiseo-nav-group__label">Estudio</span>
+            <button onClick={() => setCurrentTab("testimonios")} className={`odiseo-nav-item${currentTab === "testimonios" ? " odiseo-nav-item--active" : ""}`}>
+              <ScrollText aria-hidden="true" />
+              Testimonios y casos
+            </button>
+            <button onClick={() => setCurrentTab("biblico")} className={`odiseo-nav-item${currentTab === "biblico" ? " odiseo-nav-item--active" : ""}`}>
+              <Cross aria-hidden="true" />
+              Biblia metafísica
+            </button>
+            <button onClick={() => setCurrentTab("examenes")} className={`odiseo-nav-item${currentTab === "examenes" ? " odiseo-nav-item--active" : ""}`}>
+              <HelpCircle aria-hidden="true" />
+              Preguntas y respuestas
+            </button>
+            <button onClick={() => setCurrentTab("biblioteca")} className={`odiseo-nav-item${currentTab === "biblioteca" ? " odiseo-nav-item--active" : ""}`}>
+              <Library aria-hidden="true" />
+              Fuentes / Conferencias
+            </button>
+          </div>
+
+          <div className="odiseo-nav-group">
+            <span className="odiseo-nav-group__label">Crear</span>
+            <button onClick={() => setCurrentTab("libro")} className={`odiseo-nav-item${currentTab === "libro" ? " odiseo-nav-item--active" : ""}`}>
+              <BookOpen aria-hidden="true" />
+              Mi libro
+            </button>
+            <button onClick={() => setCurrentTab("planes")} className={`odiseo-nav-item${currentTab === "planes" ? " odiseo-nav-item--active" : ""}`}>
+              <Calendar aria-hidden="true" />
+              Planes
+            </button>
+            <button onClick={() => setCurrentTab("telegram")} className={`odiseo-nav-item${currentTab === "telegram" ? " odiseo-nav-item--active" : ""}`}>
+              <Send aria-hidden="true" />
+              Telegram
+            </button>
+          </div>
+
+          <div className="odiseo-nav-group">
+            <span className="odiseo-nav-group__label">Personal</span>
+            <button onClick={() => setCurrentTab("diario")} className={`odiseo-nav-item${currentTab === "diario" ? " odiseo-nav-item--active" : ""}`}>
+              <FileText aria-hidden="true" />
+              Diario íntimo
+            </button>
+            <button onClick={() => setCurrentTab("notas")} className={`odiseo-nav-item${currentTab === "notas" ? " odiseo-nav-item--active" : ""}`}>
+              <StickyNote aria-hidden="true" />
+              Notas
+            </button>
+          </div>
+        </nav>
+
+        <div className="odiseo-sb-footer">
+          <button
+            className={`odiseo-nav-item${currentTab === "perfil" ? " odiseo-nav-item--active" : ""}`}
+            onClick={() => setCurrentTab("perfil")}
+          >
+            <Trophy size={15} aria-hidden="true" />
+            Mejorar plan
+          </button>
         </div>
       </aside>
 
-      {/* 2. MAIN PANEL (Right side panel en gris claro #EFEFEF) */}
-      <main className="flux-panel">
-        
-        {/* Header con Perfil de Germán Gonzalez */}
-        <header className="flux-header">
-          <div className="flux-profile">
-            <div className="flux-profile__avatar" style={{ width: "48px", height: "48px", border: "2px solid var(--swiss-border)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "var(--swiss-muted)" }}>
-              <UserRound aria-hidden="true" />
-            </div>
-            <div className="flux-profile__info">
-              <span className="flux-profile__name" style={{ fontSize: "16px", fontWeight: "bold", color: "#131313", display: "flex", alignItems: "center", gap: "6px" }}>
-                Germán Gonzalez
-                <ChevronDown aria-hidden="true" style={{ width: "14px", height: "14px" }} />
+      {/* 2. MAIN */}
+      <div className="odiseo-main">
+        <header className="odiseo-topbar">
+          {/* Left: user name + email */}
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
+              <span style={{ fontFamily: "var(--ods-font)", fontWeight: 700, fontSize: 14, color: "var(--ods-ink)" }}>
+                {displayName}
               </span>
-              <span className="flux-profile__email" style={{ fontSize: "13px", color: "var(--flux-text-muted)" }}>alumno@unimaginacion.edu</span>
+              <span style={{ fontFamily: "var(--ods-mono)", fontSize: 11, color: "var(--ods-g-500)" }}>
+                {currentUser?.email || ""}
+              </span>
             </div>
           </div>
 
-          <div className="flux-header-actions">
-            {/* Buscador */}
-            <div className="flux-search-bar">
-              <SearchIcon aria-hidden="true" />
-              <input type="text" placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          {/* Right: controls */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {/* Author selector */}
+            <div className="odiseo-author-selector">
+              <button
+                type="button"
+                onClick={() => setAuthorMenuOpen((open) => !open)}
+                className="odiseo-author-btn"
+              >
+                <span style={{ fontFamily: "var(--ods-mono)", fontSize: 9.5, color: "var(--ods-g-500)", letterSpacing: ".1em", textTransform: "uppercase" }}>
+                  Autor
+                </span>
+                <span style={{ fontWeight: 700 }}>Neville Goddard</span>
+                <ChevronDown size={12} />
+              </button>
+              {authorMenuOpen && (
+                <div className="odiseo-author-menu">
+                  {[
+                    ["Neville Goddard", "activo"],
+                    ["Joseph Murphy", "próximamente"],
+                    ["Emmet Fox", "próximamente"],
+                    ["Florence Scovel Shinn", "próximamente"],
+                  ].map(([name, status]) => (
+                    <button
+                      key={name}
+                      type="button"
+                      disabled={status !== "activo"}
+                      onClick={() => setAuthorMenuOpen(false)}
+                      className={`odiseo-author-item${status === "activo" ? " odiseo-author-item--active" : ""}`}
+                    >
+                      <span style={{ fontWeight: status === "activo" ? 700 : 500 }}>{name}</span>
+                      <span style={{ fontSize: 11, color: status === "activo" ? "var(--ods-accent)" : "var(--ods-g-500)" }}>
+                        {status}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Stats */}
-            <span style={{ fontSize: "13px", fontWeight: "500", color: "var(--flux-text-muted)", marginLeft: "12px", marginRight: "12px" }}>
-              {questionsCount} / 200 consultas mes
-            </span>
+            {/* Search */}
+            <div className="odiseo-search">
+              <SearchIcon size={15} aria-hidden="true" />
+              <input type="text" placeholder="Buscar…" value={search} onChange={(e) => setSearch(e.target.value)} />
+            </div>
 
-            {/* Notificaciones */}
-            <button className="flux-icon-btn" aria-label="Notificaciones">
-              <Bell aria-hidden="true" />
-              <div className="flux-icon-btn__dot" />
+            {/* Query counter */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1.5px solid var(--ods-g-300)", borderRadius: 999, padding: "6px 13px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <span style={{ fontFamily: "var(--ods-mono)", fontSize: 10, color: "var(--ods-g-500)", letterSpacing: ".06em" }}>
+                  {questionsCount} / 200
+                </span>
+                <div style={{ width: 60, height: 5, borderRadius: 999, background: "var(--ods-g-200)", overflow: "hidden" }}>
+                  <div style={{ height: "100%", background: "var(--ods-accent)", borderRadius: 999, width: `${Math.min(100, (questionsCount / 200) * 100)}%`, transition: "width 0.3s" }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Memoria activa */}
+            <button className="odiseo-memoria-pill" onClick={() => setCurrentTab("memoria")}>
+              <span style={{ width: 7, height: 7, borderRadius: 99, background: "var(--ods-accent)", display: "inline-block", flexShrink: 0 }} />
+              Memoria activa
             </button>
+
+            {/* Bell */}
+            <button className="odiseo-pill odiseo-pill--ghost" style={{ borderColor: "var(--ods-g-300)", padding: "8px 10px" }} aria-label="Notificaciones">
+              <Bell size={15} />
+            </button>
+
+            {/* Avatar + profile popup */}
+            <div style={{ position: "relative" }}>
+              <button
+                type="button"
+                style={{ border: 0, background: "none", cursor: "pointer", padding: 0, display: "flex" }}
+                onClick={() => setProfileOpen((o) => !o)}
+                aria-label="Perfil"
+              >
+                <div className="odiseo-avatar">{displayName.charAt(0).toUpperCase()}</div>
+              </button>
+              {profileOpen && (
+                <div className="odiseo-profile-popup">
+                  <div className="odiseo-profile-popup__head">
+                    <div className="odiseo-profile-popup__name">{displayName}</div>
+                    <div className="odiseo-profile-popup__email">{currentUser?.email || ""}</div>
+                  </div>
+                  <hr />
+                  <button className="odiseo-menu-item" onClick={() => { setCurrentTab("perfil"); setProfileOpen(false); }}>
+                    Tu cuenta <UserCog size={15} />
+                  </button>
+                  <button className="odiseo-menu-item" onClick={() => { setCurrentTab("perfil"); setProfileOpen(false); }}>
+                    Mejorar plan <Trophy size={15} />
+                  </button>
+                  <button className="odiseo-menu-item odiseo-menu-item--danger" onClick={async () => { try { await supabaseClient.auth.signOut(); } catch (_) {} setProfileOpen(false); }}>
+                    Cerrar sesión <LogOut size={15} />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
+        <div className={`odiseo-viewport${currentTab === "aula" || currentTab === "narrador" ? " odiseo-viewport--chat" : ""}`}>
         {/* ──── VISTA DINÁMICA SEGÚN PESTAÑA SELECCIONADA ──── */}
 
         {/* 1. DASHBOARD / PANEL PRINCIPAL */}
         {currentTab === "panel" && (
-          <>
-            <section className="flux-title-block">
-              <div>
-                <h1 className="flux-title">Tu Panel de Estudio</h1>
-                <p className="flux-subtitle">Progreso académico, lecturas cruzadas y estados de estudio.</p>
-              </div>
-
-              <div className="flux-date-selector">
-                <span>12 July, 2024</span>
-                <div className="flux-dropdown-pill">
-                  <span>Today</span>
-                  <ChevronDown aria-hidden="true" />
-                </div>
-              </div>
-            </section>
-
-            <div className="flux-grid">
-              
-              {/* Tarjeta 1: Uso del Sistema (Doble Alto) */}
-              <div className="flux-card flux-card--double">
-                <div className="flux-card__header">
-                  <span className="flux-card__title">
-                    <Activity aria-hidden="true" />
-                    Uso del Sistema
-                  </span>
-                  <span className="flux-card__dots">•••</span>
-                </div>
-
-                <div>
-                  <div className="flex items-baseline">
-                    <span className="flux-card__val">{questionsCount}</span>
-                    <span className="flux-card__badge">/ 200 consultas</span>
-                  </div>
-                </div>
-
-                {/* Icono de actividad limpio y común */}
-                <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "140px", margin: "12px 0" }}>
-                  <Sparkles className="flux-hero-icon" aria-hidden="true" />
-                </div>
-
-                {/* Lista de barras de progreso */}
-                <div className="flux-progress-list">
-                  <div className="flux-progress-item">
-                    <span className="flux-progress-item__val">{Math.round((questionsCount / 200) * 100)}%</span>
-                    <div className="flux-progress-bar">
-                      <div className="flux-progress-bar__fill" style={{ width: `${(questionsCount / 200) * 100}%`, backgroundColor: "var(--flux-lavender)" }} />
-                    </div>
-                    <span className="flux-progress-item__label">
-                      <span className="flux-progress-item__dot" style={{ backgroundColor: "var(--flux-lavender)" }} />
-                      Consultas
-                    </span>
-                  </div>
-
-                  <div className="flux-progress-item">
-                    <span className="flux-progress-item__val">{examScore !== null ? "100%" : "0%"}</span>
-                    <div className="flux-progress-bar">
-                      <div className="flux-progress-bar__fill" style={{ width: examScore !== null ? "100%" : "0%", backgroundColor: "var(--flux-dark-container)" }} />
-                    </div>
-                    <span className="flux-progress-item__label">
-                      <span className="flux-progress-item__dot" style={{ backgroundColor: "var(--flux-dark-container)" }} />
-                      Exámenes
-                    </span>
-                  </div>
-
-                  <div className="flux-progress-item">
-                    <span className="flux-progress-item__val">{compiledBookTitle ? "100%" : "0%"}</span>
-                    <div className="flux-progress-bar">
-                      <div className="flux-progress-bar__fill" style={{ width: compiledBookTitle ? "100%" : "0%", backgroundColor: "var(--flux-lime)" }} />
-                    </div>
-                    <span className="flux-progress-item__label">
-                      <span className="flux-progress-item__dot" style={{ backgroundColor: "var(--flux-lime)" }} />
-                      Libros
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Tarjeta 2: Archivo Conectado */}
-              <div className="flux-card">
-                <div className="flux-card__header">
-                  <span className="flux-card__title">
-                    <BookOpen aria-hidden="true" />
-                    Archivo Conectado
-                  </span>
-                  <span className="flux-card__dots">•••</span>
-                </div>
-
-                <div>
-                  <span className="flux-card__val">621</span>{" "}
-                  <span className="text-xs font-semibold text-stone-400">Clases</span>
-                  <p className="text-[10px] text-stone-500 mt-2 font-medium">✓ Listos para el Narrador</p>
-                </div>
-
-                {/* Cuadrícula de bienestar estética */}
-                <div className="flux-dots-grid">
-                  {Array.from({ length: 40 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className={`flux-dot ${
-                        [1, 3, 5, 8, 12, 14, 17, 19, 22, 25, 28, 30, 31, 33, 36, 38].includes(i)
-                          ? "flux-dot--active"
-                          : ""
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Tarjeta 3: Siguiente Evaluación */}
-              <div className="flux-card">
-                <div className="flux-card__header">
-                  <span className="flux-card__title">
-                    <Bot aria-hidden="true" />
-                    Siguiente Evaluación
-                  </span>
-                  <span className="flux-card__dots">•••</span>
-                </div>
-
-                <div>
-                  <h4 className="text-[13px] font-bold text-[#131313] truncate">Basado en Charla: La Fe (1968)</h4>
-                  <p className="text-[10px] text-stone-400 mt-1 font-medium">3 preguntas de opción múltiple</p>
-                </div>
-
-                <button
-                  onClick={() => setCurrentTab("examenes")}
-                  className="flux-btn-primary"
-                >
-                  Rendir Examen
-                </button>
-              </div>
-
-              {/* Tarjeta 4: Compilar mi Libro (Oscura) */}
-              <div className="flux-card flux-card--dark-horizontal">
-                <div className="flux-sleep-left">
-                  <span className="flux-card__title">Módulo de Compilación</span>
-                  <div>
-                    <h3 className="text-base font-bold text-white">Generar Libro de Luz</h3>
-                    <p className="text-[10.5px] text-[#A0A0A5] mt-1 leading-relaxed">
-                      Compila de forma inteligente tus conversaciones y exámenes en un libro único.
-                    </p>
-                  </div>
-
-                  <div className="flux-compiler-row">
-                    <select
-                      value={selectedTopic}
-                      onChange={(e) => setSelectedTopic(e.target.value)}
-                      className="flux-compiler-select"
-                    >
-                      <option>La Fe</option>
-                      <option>Los Estados de Conciencia</option>
-                      <option>La Imaginación Creadora</option>
-                    </select>
-                    <button
-                      onClick={() => {
-                        setCurrentTab("libro");
-                        handleCompilarLibro();
-                      }}
-                      className="flux-compiler-btn"
-                    >
-                      Generar
-                    </button>
-                  </div>
-                </div>
-
-                {/* Gráfico estético derecho en la tarjeta oscura */}
-                <div className="flux-chart-container">
-                  {[
-                    { label: "Jun", stripedVal: 35, val: 20 },
-                    { label: "Jul", stripedVal: 45, val: 25 },
-                    { label: "Aug", stripedVal: 30, val: 15 },
-                    { label: "Sept", active: true, limeVal: 80, lavenderVal: 60 },
-                    { label: "Oct", stripedVal: 35, val: 18 },
-                    { label: "Nov", stripedVal: 40, val: 20 },
-                  ].map((col, idx) => (
-                    <div
-                      key={idx}
-                      className={`flux-chart-col ${col.active ? "flux-chart-col--active" : ""}`}
-                    >
-                      <div className="flux-chart-bars">
-                        {col.active ? (
-                          <>
-                            <div className="flux-bar flux-bar--lime" style={{ height: `${col.limeVal}%` }} />
-                            <div className="flux-bar flux-bar--lavender" style={{ height: `${col.lavenderVal}%` }} />
-                          </>
-                        ) : (
-                          <>
-                            <div className="flux-bar flux-bar--striped" style={{ height: `${col.stripedVal}%` }} />
-                            <div className="flux-bar flux-bar--striped" style={{ height: `${col.val}%` }} />
-                          </>
-                        )}
-                      </div>
-                      <span className="flux-chart-label" style={{ color: col.active ? "#FFFFFF" : "#7d7d82" }}>{col.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
+          <div style={{ maxWidth: 1180, width: "100%" }}>
+            {/* Tool head */}
+            <div className="ods-tool-head">
+              <h1>Mi espacio en {BRAND_NAME}</h1>
+              <p className="ods-tool-head__sub">Elegí cómo querés trabajar tu imaginación hoy.</p>
             </div>
-          </>
+
+            {/* Active plan strip */}
+            <div className="ods-plan-strip">
+              <div className="ods-plan-strip__inner">
+                <span className="ods-plan-strip__dot" />
+                <div>
+                  <div className="ods-plan-strip__title">Sostener el deseo — Día 3 de 7</div>
+                  <div className="ods-plan-strip__sub">Plan activo · intensidad media</div>
+                </div>
+              </div>
+              <button className="ods-plan-btn" onClick={() => setCurrentTab("planes")}>
+                Continuar plan →
+              </button>
+            </div>
+
+            {/* Tools grid */}
+            <div className="ods-tool-grid">
+              {(
+                [
+                  { tab: "aula", icon: <MessageSquareText size={20} />, title: "Coach", desc: "Trabajá tu deseo con una guía directa.", featured: true },
+                  { tab: "narrador", icon: <Sparkles size={20} />, title: "Narrador", desc: "Recibí explicaciones vivas, ejemplos y escenas guiadas." },
+                  { tab: "testimonios", icon: <ScrollText size={20} />, title: "Testimonios y casos", desc: "Encontrá historias reales relacionadas con lo que querés vivir." },
+                  { tab: "biblico", icon: <Cross size={20} />, title: "Biblia metafísica", desc: "Comprendé símbolos bíblicos como estados de conciencia." },
+                  { tab: "examenes", icon: <HelpCircle size={20} />, title: "Preguntas y respuestas", desc: "Integrá conceptos con preguntas configurables." },
+                  { tab: "biblioteca", icon: <Library size={20} />, title: "Fuentes / Conferencias", desc: "Explorá el material base de Neville." },
+                  { tab: "libro", icon: <BookOpen size={20} />, title: "Mi libro", desc: "Convertí tu proceso en un libro propio." },
+                  { tab: "planes", icon: <Calendar size={20} />, title: "Planes", desc: "Creá prácticas de 7, 15 o 30 días." },
+                  { tab: "telegram", icon: <Send size={20} />, title: "Telegram", desc: "Mensajes personalizados para volver al estado." },
+                  { tab: "diario", icon: <FileText size={20} />, title: "Diario íntimo", desc: "Registrá estados, avances y observaciones." },
+                  { tab: "notas", icon: <StickyNote size={20} />, title: "Notas", desc: "Ideas breves para estudiar y practicar." },
+                ] as { tab: TabId; icon: React.ReactNode; title: string; desc: string; featured?: boolean }[]
+              ).map((tool) => (
+                <div
+                  key={tool.tab}
+                  className={`ods-tcard${tool.featured ? " ods-tcard--featured" : ""}`}
+                  onClick={() => {
+                    setCurrentTab(tool.tab);
+                    if (tool.tab === "aula") { setAgent("profesor"); setChatMode("conversar"); }
+                  }}
+                >
+                  <div className="ods-tcard__ico">{tool.icon}</div>
+                  <h3 className="ods-tcard__title">{tool.title}</h3>
+                  <p className="ods-tcard__desc">{tool.desc}</p>
+                </div>
+              ))}
+
+              {/* Memoria — dark tile */}
+              <div className="ods-tcard ods-tcard--dark" onClick={() => setCurrentTab("memoria")}>
+                <div className="ods-tcard__ico"><History size={20} /></div>
+                <h3 className="ods-tcard__title" style={{ color: "#fff" }}>Memoria</h3>
+                <p className="ods-tcard__desc" style={{ color: "rgba(255,255,255,.65)" }}>
+                  Todo lo que Odiseo recuerda de tu proceso.
+                </p>
+              </div>
+            </div>
+          </div>
         )}
 
-        {/* 2. AGENTES (CHAT RAG INTEGRADO) */}
-        {(["aula", "citas", "lecturas", "practicas", "biblico", "glosario", "testimonios"] as TabId[]).includes(currentTab) && (
-          <div className="flux-chat-container">
-            {/* Header del Chat */}
-            <div className="flux-chat-header">
-              <div>
-                <span className="flux-chat-header__eyebrow">
-                  {currentTab === "aula" ? "Centro de mando" :
-                   currentTab === "citas" ? "Agente de Citas" :
-                   currentTab === "lecturas" ? "Agente de Lecturas" :
-                   currentTab === "practicas" ? "Agente de Prácticas" :
-                   currentTab === "biblico" ? "Agente Bíblico" :
-                   currentTab === "glosario" ? "Agente de Glosario" :
-                   "Agente de Testimonios"}
-                </span>
-                <h2 className="flux-chat-header__title">
-                  {currentTab === "aula" ? "Anima" :
-                   currentTab === "citas" ? "Citas" :
-                   currentTab === "lecturas" ? "Lecturas Recomendadas" :
-                   currentTab === "practicas" ? "Prácticas" :
-                   currentTab === "biblico" ? "Bíblico / Personajes" :
-                   currentTab === "glosario" ? "Glosario y Definiciones" :
-                   "Testimonios y Casos"}
-                </h2>
-              </div>
+        {/* 2. COACH — Vista limpia con chat real */}
+        {currentTab === "aula" && (
+          <CoachView
+            messages={messages}
+            input={input}
+            setInput={setInput}
+            loading={loading}
+            onSend={handleSend}
+            onQuickSend={sendChatMessage}
+            parseMarkdown={parseMarkdown}
+            sendToSection={sendToSection}
+            pendingContext={pendingContext}
+            clearPendingContext={() => setPendingContext(null)}
+          />
+        )}
 
-              <div className="flux-chat-agents">
-                <button
-                  onClick={() => setAgent("profesor")}
-                  className={`flux-chat-btn ${agent === "profesor" ? "flux-chat-btn--active" : ""}`}
-                >
-                  Instructor
-                </button>
-                <button
-                  onClick={() => setAgent("cuentacuentos")}
-                  className={`flux-chat-btn ${agent === "cuentacuentos" ? "flux-chat-btn--active" : ""}`}
-                >
-                  Narrador
-                </button>
-              </div>
-            </div>
+        {/* TESTIMONIOS — Vista propia */}
+        {currentTab === "testimonios" && (
+          <TestimoniosView sendToSection={sendToSection} />
+        )}
 
-            <div className="flux-chat-command-bar">
-              <div className="flux-memory-control">
-                <span className="flux-command-label">Memoria</span>
-                <button
-                  type="button"
-                  onClick={() => setUseMemory((value) => !value)}
-                  className={`flux-memory-switch ${useMemory ? "flux-memory-switch--active" : ""}`}
-                  aria-pressed={useMemory}
-                >
-                  <span />
-                </button>
-                <strong>{useMemory ? "Activa" : "Solo esta charla"}</strong>
-              </div>
+        {/* BIBLIA METAFÍSICA — Vista propia */}
+        {currentTab === "biblico" && (
+          <BiblicaView sendToSection={sendToSection} />
+        )}
 
-              <div className="flux-mode-control">
-                <span className="flux-command-label">Modo</span>
-                <select
-                  value={chatMode}
-                  onChange={(event) => setChatMode(event.target.value as ChatModeId)}
-                  className="flux-mode-select"
-                  aria-label="Modo de trabajo"
-                >
-                  {chatModes.map((mode) => (
-                    <option key={mode.id} value={mode.id}>{mode.label}</option>
-                  ))}
-                </select>
-                <span className="flux-mode-current">
-                  {chatModes.find((mode) => mode.id === chatMode)?.desc}
-                </span>
-              </div>
-            </div>
-
-            {/* Banner de Contexto de Lectura Prioritaria */}
-            {selectedClassContext && (
-              <div className="flux-chat-context-banner">
-                <span>📖 Clase prioritaria activa: <strong>{selectedClassContext.titulo}</strong></span>
-                <button
-                  onClick={() => setSelectedClassContext(null)}
-                  className="flux-chat-context-banner__close"
-                  title="Limpiar lectura prioritaria"
-                >
-                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-              </div>
-            )}
-
-            {/* Historial de Mensajes */}
-            <div className="flux-chat-messages">
-              {messages.length === 0 ? (
-                <div className="flux-chat-empty">
-                  <div className="flux-chat-empty__copy">
-                    <span className="flux-chat-empty__label">Tu espacio privado de imaginación</span>
-                    <h3>Trabajá desde una sola conversación.</h3>
-                    <p>
-                      Pedile a Anima que conecte memoria, material de estudio, pruebas, planes, diario, Telegram, libros y presentaciones.
-                    </p>
-                  </div>
-
-                  <div className="flux-chat-actions-grid">
-                    {chatModes.map((mode) => (
-                      <button
-                        key={mode.id}
-                        type="button"
-                        onClick={() => {
-                          setChatMode(mode.id);
-                          setInput(mode.prompt);
-                          textareaRef.current?.focus();
-                        }}
-                        className={`flux-chat-action-card ${chatMode === mode.id ? "flux-chat-action-card--active" : ""}`}
-                      >
-                        <span>{mode.label}</span>
-                        <small>{mode.desc}</small>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flux-bubble ${
-                      msg.role === "user" ? "flux-bubble--user" : "flux-bubble--agent"
-                    }`}
-                  >
-                    {parseMarkdown(msg.content)}
-                  </div>
-                ))
-              )}
-
-              {/* Indicador de Carga */}
-              {loading && (
-                <div className="flux-bubble flux-bubble--agent">
-                  <div className="flux-typing">
-                    <span className="flux-typing-dot" />
-                    <span className="flux-typing-dot" />
-                    <span className="flux-typing-dot" />
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Caja de Entrada de Chat */}
-            <div className="flux-chat-input-area">
-              <form onSubmit={handleSend} className="flux-chat-input-container">
-                <textarea
-                  ref={textareaRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder={
-                    chatMode === "conversar"
-                      ? "Preguntá algo o pedí que conecte ideas de tu memoria..."
-                      : chatModes.find((mode) => mode.id === chatMode)?.prompt
-                  }
-                  rows={1}
-                  disabled={loading}
-                />
-                <button
-                  type="submit"
-                  className="flux-chat-send-btn"
-                  disabled={!input.trim() || loading}
-                >
-                  ✦
-                </button>
-              </form>
+        {/* TABS FANTASMA — Fallback limpio */}
+        {(["citas", "lecturas", "practicas", "glosario"] as TabId[]).includes(currentTab) && (
+          <div style={{ padding: "60px 24px", maxWidth: "600px", margin: "0 auto", textAlign: "center" }}>
+            <div style={{
+              backgroundColor: "var(--swiss-muted)",
+              border: "2px dashed var(--swiss-border)",
+              borderRadius: "22px",
+              padding: "40px 32px"
+            }}>
+              <p style={{ fontSize: "14px", fontWeight: 500, color: "var(--swiss-text-muted)", marginBottom: "16px" }}>
+                Esta sección fue integrada dentro de Coach, Fuentes de Neville o Preguntas y respuestas.
+              </p>
+              <button
+                onClick={() => setCurrentTab("panel")}
+                className="swiss-landing-cta"
+                style={{ padding: "10px 24px", borderRadius: "22px", fontSize: "12px", fontWeight: 900, textTransform: "uppercase" }}
+              >
+                Volver al inicio
+              </button>
             </div>
           </div>
         )}
@@ -1859,9 +1968,21 @@ ${contenidoConsolidado}
         {currentTab === "biblioteca" && (
           <div className="flex-1 flex flex-col">
             <header className="content-header" style={{ marginBottom: "16px" }}>
-              <h2 className="flux-title" style={{ fontSize: "20px" }}>Archivo de Textos</h2>
-              <p className="flux-subtitle">Navega y lee cada uno de los 621 documentos recopilados de Neville Goddard.</p>
+              <h2 className="flux-title" style={{ fontSize: "20px" }}>Fuentes de Neville</h2>
+              <p className="flux-subtitle">Conferencias, libros y fragmentos que alimentan las respuestas, prácticas y búsquedas dentro de {BRAND_NAME}.</p>
             </header>
+
+            {!hasFounderAccess && (
+              <div style={{ backgroundColor: "var(--swiss-bg)", border: "2px solid #000", borderRadius: "18px", padding: "18px 20px", marginBottom: "16px", display: "flex", justifyContent: "space-between", gap: "16px", alignItems: "center", flexWrap: "wrap" }}>
+                <div>
+                  <h3 style={{ fontSize: "15px", fontWeight: 900, textTransform: "uppercase", marginBottom: "4px" }}>Fuentes de Neville</h3>
+                  <p style={{ fontSize: "13px", color: "var(--swiss-text-muted)", margin: 0 }}>Las conferencias completas forman parte de la suscripción de {BRAND_NAME}.</p>
+                </div>
+                <button className="swiss-landing-cta" style={{ borderRadius: "999px", padding: "10px 18px", fontSize: "12px", fontWeight: 900 }}>
+                  Activar acceso
+                </button>
+              </div>
+            )}
 
             {/* Buscador de lecciones */}
             <div className="library-search" style={{ marginBottom: "16px" }}>
@@ -1938,8 +2059,11 @@ ${contenidoConsolidado}
                   textosFiltrados.map((texto, idx) => (
                     <div
                       key={idx}
-                      onClick={() => abrirTexto(texto)}
+                      onClick={() => {
+                        if (hasFounderAccess) abrirTexto(texto);
+                      }}
                       className="flux-class-card"
+                      style={{ opacity: hasFounderAccess ? 1 : 0.82, cursor: hasFounderAccess ? "pointer" : "default" }}
                     >
                       <h4 className="flux-class-title">{texto.titulo}</h4>
                       <div className="flux-class-meta">
@@ -1972,28 +2096,86 @@ ${contenidoConsolidado}
           </div>
         )}
 
-        {/* 4. SALA DE EXÁMENES */}
+        {/* 4. PREGUNTAS Y RESPUESTAS */}
         {currentTab === "examenes" && (
-          <div>
-            <header className="content-header" style={{ marginBottom: "20px" }}>
-              <h2 className="flux-title" style={{ fontSize: "20px" }}>Sala de Exámenes</h2>
-              <p className="flux-subtitle">Pon a prueba tu asunción y tu comprensión conceptual de la doctrina.</p>
+          <div style={{ padding: "40px 24px", maxWidth: "900px", margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+            <header className="content-header" style={{ marginBottom: "32px", width: "100%" }}>
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
+                <h2 className="flux-title" style={{ fontSize: "32px", textTransform: "uppercase", fontWeight: 900, margin: 0, letterSpacing: "-0.02em" }}>Preguntas y respuestas</h2>
+              </div>
+              <p className="flux-subtitle" style={{ fontSize: "18px", color: "var(--swiss-fg)", fontWeight: 500 }}>Integrá conceptos y descubrí qué entendiste realmente.</p>
             </header>
 
             {!examStarted ? (
               <div className="flux-exam-container">
-                <h3 className="flux-exam-title">Examen de Doctrina</h3>
+                <h3 className="flux-exam-title">Preguntas para integrar</h3>
                 <p className="flux-exam-desc">
-                  La IA generará 3 preguntas de opción múltiple basadas en el material de la biblioteca.
+                  Generá preguntas sobre una charla, una lectura, una escena, una entrada del diario, un plan o una enseñanza.
                 </p>
-                <button
-                  onClick={generarExamen}
-                  className="flux-btn-primary"
-                  style={{ width: "100%", padding: "12px" }}
-                  disabled={examLoading}
-                >
-                  {examLoading ? "Generando examen..." : "Comenzar Evaluación"}
-                </button>
+
+                {pendingContext?.target === "examenes" ? (
+                  <div style={{ backgroundColor: "var(--swiss-muted)", border: "2px solid #000", borderRadius: "16px", padding: "20px", marginTop: "16px", marginBottom: "16px" }}>
+                    <h4 style={{ fontSize: "14px", fontWeight: 900, textTransform: "uppercase", marginBottom: "8px" }}>Material para trabajar</h4>
+                    <p style={{ fontSize: "13px", color: "var(--swiss-text-muted)", marginBottom: "12px", fontStyle: "italic" }}>Origen: {pendingContext.source} {pendingContext.title ? `- ${pendingContext.title}` : ""}</p>
+                    <textarea
+                      readOnly
+                      value={pendingContext.content}
+                      style={{ width: "100%", height: "80px", padding: "12px", borderRadius: "12px", border: "1.5px solid var(--swiss-border)", backgroundColor: "var(--swiss-bg)", fontSize: "12px", resize: "none", marginBottom: "12px" }}
+                    />
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                      <button onClick={generarExamen} className="swiss-landing-cta" style={{ padding: "10px 20px", borderRadius: "22px", fontSize: "11px", fontWeight: 900, textTransform: "uppercase" }}>Generar preguntas desde este material</button>
+                      <button onClick={() => setPendingContext(null)} className="flux-btn-secondary" style={{ padding: "10px 20px", borderRadius: "22px", fontSize: "11px", fontWeight: 900, textTransform: "uppercase" }}>Cancelar</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "24px", textAlign: "left", width: "100%", maxWidth: "600px", margin: "24px auto 0" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "12px", fontWeight: 900, textTransform: "uppercase", marginBottom: "8px" }}>Cantidad de preguntas</label>
+                      <select value={examQuantity} onChange={(e) => setExamQuantity(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "2px solid var(--swiss-border)", backgroundColor: "var(--swiss-bg)", fontSize: "14px" }}>
+                        <option value="3">3 preguntas</option>
+                        <option value="5">5 preguntas</option>
+                        <option value="10">10 preguntas</option>
+                        <option value="15">15 preguntas</option>
+                        <option value="20">20 preguntas</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "12px", fontWeight: 900, textTransform: "uppercase", marginBottom: "8px" }}>Dificultad</label>
+                      <select value={examDifficulty} onChange={(e) => setExamDifficulty(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "2px solid var(--swiss-border)", backgroundColor: "var(--swiss-bg)", fontSize: "14px" }}>
+                        <option value="Inicial">Inicial</option>
+                        <option value="Media">Media</option>
+                        <option value="Profunda">Profunda</option>
+                        <option value="Avanzada">Avanzada</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "12px", fontWeight: 900, textTransform: "uppercase", marginBottom: "8px" }}>Formato</label>
+                      <select value={examFormat} onChange={(e) => setExamFormat(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "2px solid var(--swiss-border)", backgroundColor: "var(--swiss-bg)", fontSize: "14px" }}>
+                        <option value="Texto abierto">Texto abierto</option>
+                        <option value="Opción múltiple">Opción múltiple</option>
+                        <option value="Verdadero o falso">Verdadero o falso</option>
+                        <option value="Mixto">Mixto</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "12px", fontWeight: 900, textTransform: "uppercase", marginBottom: "8px" }}>Material o Tema</label>
+                      <textarea 
+                        value={examMaterial} 
+                        onChange={(e) => setExamMaterial(e.target.value)}
+                        placeholder="Ejemplo: vivir desde el final, revisión, dinero, Moisés, una entrada del diario..."
+                        style={{ width: "100%", height: "100px", padding: "12px", borderRadius: "8px", border: "2px solid var(--swiss-border)", backgroundColor: "var(--swiss-bg)", fontSize: "14px", resize: "none" }}
+                      />
+                    </div>
+                    <button
+                      onClick={generarExamen}
+                      className="swiss-landing-cta"
+                      style={{ width: "100%", padding: "16px", marginTop: "16px", borderRadius: "22px", fontSize: "14px", fontWeight: 900, textTransform: "uppercase" }}
+                      disabled={examLoading}
+                    >
+                      {examLoading ? "Generando preguntas..." : "Generar preguntas"}
+                    </button>
+                  </div>
+                )}
               </div>
             ) : examLoading ? (
               <div className="flux-exam-container" style={{ textAlign: "center", padding: "40px" }}>
@@ -2009,27 +2191,74 @@ ${contenidoConsolidado}
             ) : (
               <div className="flux-exam-container">
                 {examQuestions.map((p: any, idx: number) => (
-                  <div key={p.id} style={{ marginBottom: "20px" }}>
-                    <h4 className="font-bold text-[13px] mb-3 text-stone-900 leading-snug">
+                  <div key={p.id} style={{ marginBottom: "24px", textAlign: "left", backgroundColor: "var(--swiss-muted)", padding: "24px", borderRadius: "16px", border: "1px solid var(--swiss-border)" }}>
+                    <h4 className="font-bold text-[15px] mb-4 text-stone-900 leading-snug">
                       {idx + 1}. {p.pregunta}
                     </h4>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                      {p.opciones.map((opc: string, opcIdx: number) => (
+                    {p.tipo === "opcion_multiple" && p.opciones && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        {p.opciones.map((opc: string, opcIdx: number) => (
+                          <button
+                            key={opcIdx}
+                            onClick={() => {
+                              if (examScore !== null) return;
+                              setAnswers((prev) => ({ ...prev, [p.id]: opcIdx }));
+                            }}
+                            style={{
+                              padding: "12px 16px",
+                              textAlign: "left",
+                              borderRadius: "8px",
+                              border: "2px solid",
+                              borderColor: examScore !== null
+                                ? (opcIdx === p.correcta
+                                    ? "#10b981"
+                                    : answers[p.id] === opcIdx
+                                    ? "var(--swiss-accent)"
+                                    : "transparent")
+                                : answers[p.id] === opcIdx
+                                ? "var(--swiss-fg)"
+                                : "transparent",
+                              backgroundColor: answers[p.id] === opcIdx ? "var(--swiss-bg)" : "var(--swiss-bg)",
+                              color: "var(--swiss-fg)",
+                              fontWeight: 500,
+                              cursor: examScore !== null ? "default" : "pointer",
+                              transition: "all 0.2s"
+                            }}
+                          >
+                            {["A", "B", "C", "D"][opcIdx] || opcIdx + 1}. {opc}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {p.tipo === "verdadero_falso" && (
+                      <div style={{ display: "flex", gap: "12px" }}>
                         <button
-                          key={opcIdx}
-                          onClick={() => {
-                            if (examScore !== null) return;
-                            setAnswers((prev) => ({ ...prev, [p.id]: opcIdx }));
-                          }}
-                          className={`flux-exam-option ${
-                            answers[p.id] === opcIdx ? "flux-exam-option--selected" : ""
-                          }`}
-                          disabled={examScore !== null}
-                        >
-                          {opc}
-                        </button>
-                      ))}
-                    </div>
+                          onClick={() => { if (examScore === null) setAnswers(prev => ({...prev, [p.id]: true})) }}
+                          style={{ flex: 1, padding: "12px", borderRadius: "8px", border: "2px solid", borderColor: examScore !== null ? (p.correcta === true ? "#10b981" : answers[p.id] === true ? "var(--swiss-accent)" : "transparent") : answers[p.id] === true ? "var(--swiss-fg)" : "transparent", backgroundColor: "var(--swiss-bg)", cursor: examScore !== null ? "default" : "pointer" }}
+                        >Verdadero</button>
+                        <button
+                          onClick={() => { if (examScore === null) setAnswers(prev => ({...prev, [p.id]: false})) }}
+                          style={{ flex: 1, padding: "12px", borderRadius: "8px", border: "2px solid", borderColor: examScore !== null ? (p.correcta === false ? "#10b981" : answers[p.id] === false ? "var(--swiss-accent)" : "transparent") : answers[p.id] === false ? "var(--swiss-fg)" : "transparent", backgroundColor: "var(--swiss-bg)", cursor: examScore !== null ? "default" : "pointer" }}
+                        >Falso</button>
+                      </div>
+                    )}
+
+                    {p.tipo === "texto_abierto" && (
+                      <textarea
+                        disabled={examScore !== null}
+                        value={answers[p.id] as string || ""}
+                        onChange={(e) => setAnswers(prev => ({...prev, [p.id]: e.target.value}))}
+                        style={{ width: "100%", height: "100px", padding: "12px", borderRadius: "8px", border: "2px solid var(--swiss-border)", backgroundColor: "var(--swiss-bg)", fontSize: "14px", resize: "none" }}
+                        placeholder="Escribí tu reflexión acá..."
+                      />
+                    )}
+
+                    {examScore !== null && p.explicacion && (
+                      <div style={{ marginTop: "16px", padding: "16px", backgroundColor: "var(--swiss-bg)", borderRadius: "8px", borderLeft: "4px solid var(--swiss-accent)", fontSize: "13px" }}>
+                        <strong>Explicación:</strong> {p.explicacion}
+                      </div>
+                    )}
                   </div>
                 ))}
 
@@ -2074,196 +2303,293 @@ ${contenidoConsolidado}
           </div>
         )}
 
-        {/* 5. COMPILAR MI LIBRO */}
+        {/* 5. MI LIBRO */}
         {currentTab === "libro" && (
-          <div>
-            <header className="content-header" style={{ marginBottom: "20px" }}>
-              <h2 className="flux-title" style={{ fontSize: "20px" }}>Compilar mi Libro</h2>
-              <p className="flux-subtitle">Crea un libro personalizado basado en tus charlas y exámenes aprobados.</p>
+          <div style={{ padding: "32px 24px", maxWidth: "980px", margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
+            <header className="content-header" style={{ marginBottom: "24px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+                <div style={{ backgroundColor: "var(--swiss-accent)", color: "#fff", padding: "12px", borderRadius: "16px" }}>
+                  <BookOpen size={24} />
+                </div>
+                <h2 className="flux-title" style={{ fontSize: "32px", textTransform: "uppercase", fontWeight: 900, margin: 0, letterSpacing: "-0.02em" }}>
+                  Mi libro
+                </h2>
+              </div>
+              <p className="flux-subtitle" style={{ fontSize: "18px", color: "var(--swiss-fg)", fontWeight: 500, marginBottom: "4px" }}>
+                Convertí tu proceso en capítulos, escenas, planes y reflexiones.
+              </p>
+              <p style={{ fontSize: "14px", color: "var(--swiss-text-muted)", fontWeight: 500, lineHeight: "1.6" }}>
+                Todo lo que trabajás puede ordenarse como capítulos, prácticas, escenas, preguntas y reflexiones en tu libro propio.
+              </p>
             </header>
 
-            <div className="flux-exam-container" style={{ maxWidth: "620px" }}>
-              <h3 className="flux-exam-title" style={{ textAlign: "left", display: "flex", alignItems: "center", gap: "8px" }}>
-                <span>✨</span> Libro de Luz Personalizado
-              </h3>
-                <p className="flux-exam-desc" style={{ textAlign: "left", fontSize: "12px", marginTop: "6px" }}>
-                  El sistema compila hasta 5 textos relacionados con el eje temático y genera un libro Markdown descargable.
-                </p>
-
-              {compilingStep === -1 && !compiledBookTitle && (
-                <div style={{ display: "flex", gap: "10px", alignItems: "flex-end", marginTop: "16px" }}>
-                  <div style={{ flex: 1 }}>
-                    <label className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-2 block">Eje Temático</label>
-                    <select
-                      value={selectedTopic}
-                      onChange={(e) => setSelectedTopic(e.target.value)}
-                      className="flux-compiler-select"
-                      style={{ width: "100%", boxSizing: "border-box" }}
+            {!bookDraft && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                {pendingContext?.target === "libro" && (
+                  <div style={{ backgroundColor: "var(--swiss-muted)", border: "2px solid #000", borderRadius: "16px", padding: "24px" }}>
+                    <h3 style={{ fontSize: "16px", fontWeight: 900, textTransform: "uppercase", marginBottom: "8px" }}>Material recibido</h3>
+                    <p style={{ fontSize: "13px", color: "var(--swiss-text-muted)", marginBottom: "16px", fontStyle: "italic" }}>Origen: {pendingContext.source} {pendingContext.title ? `- ${pendingContext.title}` : ""}</p>
+                    <textarea
+                      readOnly
+                      value={pendingContext.content}
+                      style={{ width: "100%", height: "120px", padding: "16px", borderRadius: "16px", border: "1.5px solid var(--swiss-border)", backgroundColor: "var(--swiss-bg)", fontSize: "13px", resize: "none", marginBottom: "16px" }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateBookForm("include", `${bookForm.include}${bookForm.include ? "\n\n" : ""}${pendingContext.content}`);
+                        setPendingContext(null);
+                      }}
+                      className="swiss-landing-cta"
+                      style={{ padding: "10px 20px", borderRadius: "22px", fontSize: "11px", fontWeight: 900, textTransform: "uppercase" }}
                     >
-                      <option>La Fe</option>
-                      <option>Los Estados de Conciencia</option>
-                      <option>La Imaginación Creadora</option>
-                    </select>
+                      Usar este material
+                    </button>
                   </div>
-                  <button
-                    onClick={handleCompilarLibro}
-                    className="flux-compiler-btn"
-                    style={{ padding: "10px 20px" }}
-                  >
-                    Generar Libro
-                  </button>
-                </div>
-              )}
+                )}
 
-              {/* Animación de carga */}
-              {compilingStep !== -1 && (
-                <div style={{ padding: "16px 0", textAlign: "center" }}>
-                  <CargandoCerebro />
-                  <p className="text-xs font-bold text-stone-900 mb-1">Compilando tu Libro de Luz...</p>
-                  <p className="text-[11px] text-stone-400 font-medium">
-                    {[
-                      "Recuperando textos del Archivo...",
-                      "Generando narrativa con IA...",
-                      "Compilando Libro de Luz...",
-                      "Finalizando documento..."
-                    ][compilingStep]}
+                <form
+                  onSubmit={handleCrearLibro}
+                  style={{
+                  backgroundColor: "var(--swiss-bg)",
+                  border: "2px solid #000",
+                  borderRadius: "22px",
+                  padding: "28px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "16px"
+                  }}
+                >
+                  <h3 style={{ fontSize: "16px", fontWeight: 900, textTransform: "uppercase" }}>Crear libro nuevo</h3>
+                  
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <div>
+                      <label style={{ fontSize: "11px", fontWeight: 900, textTransform: "uppercase", color: "var(--swiss-text-muted)", display: "block", marginBottom: "6px" }}>Título del libro</label>
+                      <input
+                        type="text"
+                        value={bookForm.title}
+                        onChange={(event) => updateBookForm("title", event.target.value)}
+                        placeholder="Ejemplo: Mi práctica de imaginación"
+                        style={{
+                          width: "100%",
+                          padding: "12px 16px",
+                          borderRadius: "16px",
+                          border: "2px solid var(--swiss-border)",
+                          fontSize: "14px",
+                          fontFamily: "inherit",
+                          boxSizing: "border-box"
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "11px", fontWeight: 900, textTransform: "uppercase", color: "var(--swiss-text-muted)", display: "block", marginBottom: "6px" }}>Tema central</label>
+                      <input
+                        type="text"
+                        value={bookForm.theme}
+                        onChange={(event) => updateBookForm("theme", event.target.value)}
+                        placeholder="Ejemplo: vivir desde el final, dinero, amor, fe, revisión, identidad..."
+                        style={{
+                          width: "100%",
+                          padding: "12px 16px",
+                          borderRadius: "16px",
+                          border: "2px solid var(--swiss-border)",
+                          fontSize: "14px",
+                          fontFamily: "inherit",
+                          boxSizing: "border-box"
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "11px", fontWeight: 900, textTransform: "uppercase", color: "var(--swiss-text-muted)", display: "block", marginBottom: "6px" }}>¿Qué querés que incluya?</label>
+                      <textarea
+                        value={bookForm.include}
+                        onChange={(event) => updateBookForm("include", event.target.value)}
+                        placeholder="Ejemplo: mis conversaciones, escenas, planes, entradas del diario, testimonios relacionados o explicaciones bíblicas."
+                        rows={3}
+                        style={{
+                          width: "100%",
+                          padding: "12px 16px",
+                          borderRadius: "16px",
+                          border: "2px solid var(--swiss-border)",
+                          fontSize: "14px",
+                          fontFamily: "inherit",
+                          resize: "vertical",
+                          boxSizing: "border-box"
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "11px", fontWeight: 900, textTransform: "uppercase", color: "var(--swiss-text-muted)", display: "block", marginBottom: "6px" }}>Tono</label>
+                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                        {["Práctico", "Narrativo", "Estudio", "Íntimo"].map((tono) => (
+                          <button
+                            key={tono}
+                            type="button"
+                            onClick={() => updateBookForm("tone", tono)}
+                            style={{
+                              padding: "8px 16px",
+                              borderRadius: "22px",
+                              border: bookForm.tone === tono ? "2px solid #000" : "2px solid var(--swiss-border)",
+                              backgroundColor: bookForm.tone === tono ? "var(--swiss-fg)" : "var(--swiss-muted)",
+                              color: bookForm.tone === tono ? "#fff" : "var(--swiss-fg)",
+                              fontSize: "12px",
+                              fontWeight: 700,
+                              cursor: "pointer",
+                              transition: "border-color 0.15s ease"
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--swiss-accent)"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--swiss-border)"; }}
+                          >
+                            {tono}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {bookError && (
+                    <p style={{ margin: 0, fontSize: "13px", fontWeight: 800, color: "var(--swiss-accent)" }}>
+                      {bookError}
+                    </p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={bookLoading}
+                    className="swiss-landing-cta"
+                    style={{ padding: "14px 20px", borderRadius: "999px", fontSize: "13px", fontWeight: 900, textTransform: "uppercase", alignSelf: "flex-start", opacity: bookLoading ? 0.65 : 1, cursor: bookLoading ? "not-allowed" : "pointer" }}
+                  >
+                    {bookLoading ? "Creando libro..." : "Crear libro"}
+                  </button>
+                </form>
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
+                  <button
+                    type="button"
+                    onClick={() => resetBookDraft()}
+                    style={{ padding: "14px 16px", borderRadius: "22px", border: "2px solid #000", backgroundColor: "var(--swiss-bg)", fontSize: "12px", fontWeight: 900, textTransform: "uppercase", cursor: "pointer", textAlign: "left" }}
+                  >
+                    Crear libro desde cero
+                  </button>
+                  {[
+                    "Desde mi deseo — próximamente",
+                    "Desde mis conversaciones — próximamente",
+                    "Desde mi diario — próximamente",
+                    "Desde un plan — próximamente"
+                  ].map((label) => (
+                    <button
+                      key={label}
+                      type="button"
+                      disabled
+                      style={{ padding: "14px 16px", borderRadius: "22px", border: "2px solid var(--swiss-border)", backgroundColor: "var(--swiss-muted)", color: "var(--swiss-text-muted)", fontSize: "12px", fontWeight: 900, textTransform: "uppercase", cursor: "not-allowed", textAlign: "left", opacity: 0.72 }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {bookDraft && (
+              <div style={{
+                backgroundColor: "var(--swiss-bg)",
+                border: "2px solid #000",
+                borderRadius: "22px",
+                padding: "28px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "18px"
+              }}>
+                <div>
+                  <p style={{ margin: "0 0 6px", fontSize: "11px", fontWeight: 900, textTransform: "uppercase", color: "var(--swiss-text-muted)" }}>Borrador de libro</p>
+                  <h3 style={{ margin: 0, fontSize: "24px", fontWeight: 900, textTransform: "uppercase" }}>{bookForm.title}</h3>
+                  <p style={{ margin: "8px 0 0", fontSize: "13px", fontWeight: 700, color: "var(--swiss-text-muted)" }}>
+                    Tema: {bookForm.theme} · Tono: {bookForm.tone}
                   </p>
                 </div>
-              )}
 
-              {/* Resultado del libro generado */}
-              {compiledBookTitle && compilingStep === -1 && (
-                <div style={{ textAlign: "center", padding: "16px 0" }}>
-                  <div style={{ width: "40px", height: "40px", border: "2px solid var(--swiss-border)", background: "var(--swiss-muted)", color: "var(--swiss-accent)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", fontWeight: "bold", fontSize: "16px" }}>
-                    ✓
-                  </div>
-                  <h4 className="text-sm font-bold text-stone-950 mb-1 uppercase tracking-wider">¡Libro compilado con éxito!</h4>
-                  <p className="text-[11px] text-stone-500 mb-4">{compiledBookTitle}</p>
-                  
-                  <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
-                    <button
-                      onClick={() => {
-                        setCompiledBookTitle(null);
-                        setAnswers({});
-                      }}
-                      className="flux-btn-secondary"
-                    >
-                      Compilar Otro
-                    </button>
-                    <button
-                      onClick={handleDescargarLibro}
-                      className="flux-btn-primary"
-                      style={{ marginTop: 0, fontSize: "11px" }}
-                    >
-                      Descargar Documento
-                    </button>
-                  </div>
+                <div style={{ backgroundColor: "var(--swiss-muted)", borderRadius: "16px", padding: "20px", fontSize: "14px", lineHeight: 1.7, whiteSpace: "normal" }}>
+                  {parseMarkdown(bookDraft)}
                 </div>
-              )}
-            </div>
+
+                {bookError && (
+                  <p style={{ margin: 0, fontSize: "13px", fontWeight: 800, color: "var(--swiss-accent)" }}>{bookError}</p>
+                )}
+                {bookSavedMessage && (
+                  <p style={{ margin: 0, fontSize: "13px", fontWeight: 800, color: "var(--swiss-fg)" }}>{bookSavedMessage}</p>
+                )}
+
+                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    onClick={handleGuardarLibroEnMemoria}
+                    disabled={bookSavingMemory}
+                    className="swiss-landing-cta"
+                    style={{ borderRadius: "999px", padding: "10px 16px", fontSize: "11px", fontWeight: 900, textTransform: "uppercase", opacity: bookSavingMemory ? 0.65 : 1 }}
+                  >
+                    {bookSavingMemory ? "Guardando..." : "Guardar en memoria"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled
+                    style={{ borderRadius: "999px", padding: "10px 16px", fontSize: "11px", fontWeight: 900, textTransform: "uppercase", border: "1.5px solid var(--swiss-border)", backgroundColor: "var(--swiss-muted)", color: "var(--swiss-text-muted)", cursor: "not-allowed" }}
+                  >
+                    Agregar material del diario — próximamente
+                  </button>
+                  <button
+                    type="button"
+                    disabled
+                    style={{ borderRadius: "999px", padding: "10px 16px", fontSize: "11px", fontWeight: 900, textTransform: "uppercase", border: "1.5px solid var(--swiss-border)", backgroundColor: "var(--swiss-muted)", color: "var(--swiss-text-muted)", cursor: "not-allowed" }}
+                  >
+                    Agregar conversaciones — próximamente
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => sendToSection("examenes", { source: "Mi libro", title: bookForm.title, action: "examenes", content: bookDraft })}
+                    style={{ borderRadius: "999px", padding: "10px 16px", fontSize: "11px", fontWeight: 900, textTransform: "uppercase", border: "1.5px solid #000", backgroundColor: "var(--swiss-bg)", color: "var(--swiss-fg)", cursor: "pointer" }}
+                  >
+                    Crear preguntas sobre este libro
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => sendToSection("planes", { source: "Mi libro", title: bookForm.title, action: "planes", content: bookDraft })}
+                    style={{ borderRadius: "999px", padding: "10px 16px", fontSize: "11px", fontWeight: 900, textTransform: "uppercase", border: "1.5px solid #000", backgroundColor: "var(--swiss-bg)", color: "var(--swiss-fg)", cursor: "pointer" }}
+                  >
+                    Convertir en plan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resetBookDraft}
+                    className="flux-btn-secondary"
+                    style={{ borderRadius: "999px", padding: "10px 16px", fontSize: "11px", fontWeight: 900, textTransform: "uppercase" }}
+                  >
+                    Crear otro libro
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* 6. MEMORIA */}
         {currentTab === "memoria" && (
-          <div>
-            <header className="content-header" style={{ marginBottom: "20px" }}>
-              <h2 className="flux-title" style={{ fontSize: "20px" }}>Mi Memoria</h2>
-              <p className="flux-subtitle">Historial de sesiones, exámenes y libros compilados.</p>
-            </header>
+          <MemoryPanel sendToSection={sendToSection} pendingContext={pendingContext} clearPendingContext={() => setPendingContext(null)} session={session} />
+        )}
 
-            {loadingMemoria ? (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "60px 0" }}>
-                <CargandoCerebro label="Cargando memoria..." />
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                {/* Sesiones recientes */}
-                <div className="flux-exam-container">
-                  <h3 className="flux-exam-title" style={{ fontSize: "14px", marginBottom: "12px" }}>Conversaciones recientes</h3>
-                  {memoriaSessions.length === 0 ? (
-                    <p className="text-[11px] text-stone-400">Todavía no hay conversaciones guardadas.</p>
-                  ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                      {memoriaSessions.slice(0, 10).map((s: any) => (
-                        <button
-                          key={s.id}
-                          onClick={() => cargarSesionHistorial(s.id)}
-                          className="flux-chat-option"
-                          style={{ textAlign: "left", padding: "10px 12px", fontSize: "12px", cursor: "pointer" }}
-                        >
-                          <div className="font-bold text-stone-900 text-[12px] truncate">
-                            {s.title || "Sin título"}
-                          </div>
-                          <div className="text-[10px] text-stone-400 mt-1">
-                            {s.agent === "cuentacuentos" ? "Narrador" : "Instructor"} · {new Date(s.updated_at).toLocaleDateString("es-AR")}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+        {currentTab === "telegram" && (
+          <TelegramView sendToSection={sendToSection} pendingContext={pendingContext} clearPendingContext={() => setPendingContext(null)} />
+        )}
 
-                {/* Exámenes */}
-                <div className="flux-exam-container">
-                  <h3 className="flux-exam-title" style={{ fontSize: "14px", marginBottom: "12px" }}>Exámenes rendidos</h3>
-                  {memoriaExams.length === 0 ? (
-                    <p className="text-[11px] text-stone-400">Todavía no rendiste ningún examen.</p>
-                  ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                      {memoriaExams.map((e: any) => (
-                        <div key={e.id} style={{ padding: "10px 12px", fontSize: "12px", borderBottom: "1px solid var(--swiss-border)" }}>
-                          <div className="font-bold text-stone-900 text-[12px] truncate">{e.title_es}</div>
-                          <div className="text-[10px] text-stone-400 mt-1">
-                            {e.score}/{e.max_score} correctas · {new Date(e.completed_at || e.created_at).toLocaleDateString("es-AR")}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+        {currentTab === "narrador" && (
+          <NarratorView sendToSection={sendToSection} pendingContext={pendingContext} clearPendingContext={() => setPendingContext(null)} />
+        )}
 
-                {/* Libros compilados */}
-                <div className="flux-exam-container">
-                  <h3 className="flux-exam-title" style={{ fontSize: "14px", marginBottom: "12px" }}>Libros compilados</h3>
-                  {memoriaBooks.length === 0 ? (
-                    <p className="text-[11px] text-stone-400">Todavía no compilaste ningún libro.</p>
-                  ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                      {memoriaBooks.map((b: any) => (
-                        <div key={b.id} style={{ padding: "10px 12px", fontSize: "12px", borderBottom: "1px solid var(--swiss-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <div>
-                            <div className="font-bold text-stone-900 text-[12px] truncate">{b.title_es}</div>
-                            <div className="text-[10px] text-stone-400 mt-1">
-                              {b.topic_es} · {new Date(b.created_at).toLocaleDateString("es-AR")}
-                            </div>
-                          </div>
-                          {b.content_markdown_es && (
-                            <button
-                              onClick={() => {
-                                const blob = new Blob([b.content_markdown_es], { type: "text/markdown;charset=utf-8;" });
-                                const url = URL.createObjectURL(blob);
-                                const link = document.createElement("a");
-                                link.href = url;
-                                link.setAttribute("download", `${b.title_es}.md`);
-                                document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
-                              }}
-                              className="flux-btn-primary"
-                              style={{ fontSize: "10px", padding: "4px 10px", margin: 0 }}
-                            >
-                              Descargar
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
+        {currentTab === "notas" && (
+          <NotesPanel sendToSection={sendToSection} />
+        )}
+
+        {currentTab === "diario" && (
+          <JournalPanel sendToSection={sendToSection} pendingContext={pendingContext} clearPendingContext={() => setPendingContext(null)} />
         )}
 
         {/* 7. PLANES */}
@@ -2274,6 +2600,25 @@ ${contenidoConsolidado}
               <p className="flux-subtitle">Prácticas guiadas de 7, 15 o 30 días diseñadas para tu crecimiento.</p>
             </header>
 
+            {pendingContext?.target === "planes" && (
+              <div style={{ backgroundColor: "var(--swiss-bg)", border: "2px solid #000", borderRadius: "22px", padding: "32px", marginBottom: "32px" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: 900, textTransform: "uppercase", marginBottom: "16px" }}>
+                  Crear plan desde: {pendingContext.source} {pendingContext.title ? `- ${pendingContext.title}` : ""}
+                </h3>
+                <textarea
+                  readOnly
+                  value={pendingContext.content}
+                  style={{ width: "100%", height: "120px", padding: "16px", borderRadius: "16px", border: "2px solid var(--swiss-border)", backgroundColor: "var(--swiss-muted)", fontSize: "13px", resize: "none", marginBottom: "16px" }}
+                />
+                <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                  <button onClick={() => setPendingContext(null)} className="swiss-landing-cta" style={{ padding: "12px 24px", borderRadius: "22px", fontSize: "12px", fontWeight: 900, textTransform: "uppercase" }}>Plan de 7 días</button>
+                  <button onClick={() => setPendingContext(null)} className="swiss-landing-cta" style={{ padding: "12px 24px", borderRadius: "22px", fontSize: "12px", fontWeight: 900, textTransform: "uppercase" }}>Plan de 15 días</button>
+                  <button onClick={() => setPendingContext(null)} className="swiss-landing-cta" style={{ padding: "12px 24px", borderRadius: "22px", fontSize: "12px", fontWeight: 900, textTransform: "uppercase" }}>Plan de 30 días</button>
+                  <button onClick={() => setPendingContext(null)} className="flux-btn-secondary" style={{ padding: "12px 24px", borderRadius: "22px", fontSize: "12px", fontWeight: 900, textTransform: "uppercase" }}>Cancelar</button>
+                </div>
+              </div>
+            )}
+
             {loadingPlanes ? (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "60px 0" }}>
                 <CargandoCerebro label="Cargando planes..." />
@@ -2282,13 +2627,13 @@ ${contenidoConsolidado}
               <div className="flux-exam-container" style={{ textAlign: "center", padding: "40px" }}>
                 <MapIconLucide size={32} className="text-stone-300 mb-3" style={{ margin: "0 auto 12px" }} />
                 <h4 className="text-sm font-bold text-stone-900 mb-2">Todavía no hay planes</h4>
-                <p className="text-[11px] text-stone-500 mb-4">Usá el modo <strong>Plan</strong> en el Aula para que la IA diseñe una práctica personalizada.</p>
-                <button
-                  onClick={() => setCurrentTab("aula")}
-                  className="flux-btn-primary"
-                >
-                  Ir al Aula
-                </button>
+                <p className="text-[11px] text-stone-500 mb-4">Podés crear uno desde un deseo, una charla, una entrada del diario o una escena.</p>
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center" }}>
+                  <button onClick={() => setCurrentTab("aula")} className="flux-btn-primary" style={{ marginTop: 0 }}>Crear plan de 7 días</button>
+                  <button onClick={() => setCurrentTab("aula")} className="flux-btn-primary" style={{ marginTop: 0 }}>Crear plan de 15 días</button>
+                  <button onClick={() => setCurrentTab("aula")} className="flux-btn-primary" style={{ marginTop: 0 }}>Crear plan de 30 días</button>
+                  <button onClick={() => setCurrentTab("aula")} className="flux-btn-secondary" style={{ marginTop: 0 }}>Crear plan desde Coach</button>
+                </div>
               </div>
             ) : (
               <div className="flux-lib-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
@@ -2322,8 +2667,8 @@ ${contenidoConsolidado}
         {currentTab === "perfil" && (
           <div>
             <header className="content-header" style={{ marginBottom: "20px" }}>
-              <h2 className="flux-title" style={{ fontSize: "20px" }}>Mi Perfil</h2>
-              <p className="flux-subtitle">Información personal y estadísticas de estudio.</p>
+              <h2 className="flux-title" style={{ fontSize: "20px" }}>Perfil / Cuenta</h2>
+              <p className="flux-subtitle">Tu cuenta en {BRAND_NAME}.</p>
             </header>
 
             <div className="flux-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
@@ -2338,15 +2683,39 @@ ${contenidoConsolidado}
                 <div style={{ padding: "12px 0", display: "flex", flexDirection: "column", gap: "10px" }}>
                   <div>
                     <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Nombre</span>
-                    <p className="text-[13px] font-bold text-stone-900">Germán Gonzalez</p>
+                    <p className="text-[13px] font-bold text-stone-900">
+                      {displayName}
+                    </p>
                   </div>
                   <div>
                     <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Email</span>
-                    <p className="text-[13px] text-stone-700">german@unimaginacion.edu</p>
+                    <p className="text-[13px] text-stone-700">{currentUser?.email || "Sin sesión"}</p>
                   </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Plan actual</span>
+                    <p className="text-[13px] font-bold text-stone-900">{planLabel}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Estado de suscripción</span>
+                    <p className="text-[13px] text-stone-700">{subscriptionStatus}</p>
+                  </div>
+                  {isAdminUser && (
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                      <span className="flux-class-badge" style={{ backgroundColor: "#000", color: "#fff" }}>Administrador</span>
+                      <span className="flux-class-badge" style={{ backgroundColor: "var(--swiss-accent)", color: "#fff" }}>Plan fundador</span>
+                    </div>
+                  )}
                   <div>
                     <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Miembro desde</span>
                     <p className="text-[13px] text-stone-700">Junio 2026</p>
+                  </div>
+                  <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", paddingTop: "8px" }}>
+                    <button className="flux-btn-secondary" style={{ borderRadius: "999px", padding: "8px 14px", fontSize: "11px", fontWeight: 900, display: "flex", alignItems: "center", gap: "6px", border: "2px solid #000" }}>
+                      <Edit3 size={14} /> Editar nombre
+                    </button>
+                    <button onClick={handleSignOut} className="flux-btn-secondary" style={{ borderRadius: "999px", padding: "8px 14px", fontSize: "11px", fontWeight: 900, display: "flex", alignItems: "center", gap: "6px", border: "2px solid #000" }}>
+                      <LogOut size={14} /> Cerrar sesión
+                    </button>
                   </div>
                 </div>
               </div>
@@ -2363,6 +2732,10 @@ ${contenidoConsolidado}
                   <div>
                     <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Consultas</span>
                     <p className="text-[13px] font-bold text-stone-900">{questionsCount} / 200 este mes</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Consultas usadas / límite</span>
+                    <p className="text-[13px] font-bold text-stone-900">{questionsCount} usadas · límite 200</p>
                   </div>
                   <div>
                     <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Exámenes rendidos</span>
@@ -2396,7 +2769,7 @@ ${contenidoConsolidado}
                       className="flux-mode-select"
                       style={{ width: "auto", fontSize: "11px" }}
                     >
-                      <option value="profesor">Instructor</option>
+                      <option value="profesor">Coach</option>
                       <option value="cuentacuentos">Narrador</option>
                     </select>
                   </div>
@@ -2417,7 +2790,8 @@ ${contenidoConsolidado}
           </div>
         )}
 
-      </main>
+        </div>{/* /odiseo-viewport */}
+      </div>{/* /odiseo-main */}
 
       {/* 3. MODAL DE LECTURA (Lector interactivo de Markdown) */}
       {selectedText && (
@@ -2465,146 +2839,124 @@ ${contenidoConsolidado}
                 className="flux-btn-primary"
                 style={{ marginTop: 0 }}
               >
-                Estudiar esta clase
+                Trabajar este texto
               </button>
             </div>
           </div>
         </div>
       )}
       {/* Mobile Bottom Navigation Bar */}
-      <nav className="flux-mobile-nav">
+      <nav className="flux-mobile-nav" style={{ overflowX: "auto", flexWrap: "nowrap" }}>
         <button
           onClick={() => setCurrentTab("panel")}
           className={`flux-mobile-nav__link ${currentTab === "panel" ? "flux-mobile-nav__link--active" : ""}`}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-            <polyline points="9 22 9 12 15 12 15 22" />
-          </svg>
+          <HomeIcon aria-hidden="true" size={20} />
           <span>Inicio</span>
         </button>
 
         <button
-          onClick={() => setCurrentTab("aula")}
+          onClick={() => { setCurrentTab("aula"); setAgent("profesor"); setChatMode("conversar"); }}
           className={`flux-mobile-nav__link ${currentTab === "aula" ? "flux-mobile-nav__link--active" : ""}`}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-          <span>Aula</span>
+          <MessageSquareText aria-hidden="true" size={20} />
+          <span>Coach</span>
         </button>
 
         <button
-          onClick={() => setCurrentTab("biblioteca")}
-          className={`flux-mobile-nav__link ${currentTab === "biblioteca" ? "flux-mobile-nav__link--active" : ""}`}
+          onClick={() => setCurrentTab("narrador")}
+          className={`flux-mobile-nav__link ${currentTab === "narrador" ? "flux-mobile-nav__link--active" : ""}`}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-          </svg>
-          <span>Archivo</span>
+          <Sparkles aria-hidden="true" size={20} />
+          <span>Narrador</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentTab("testimonios")}
+          className={`flux-mobile-nav__link ${currentTab === "testimonios" ? "flux-mobile-nav__link--active" : ""}`}
+        >
+          <ScrollText aria-hidden="true" size={20} />
+          <span>Testimonios</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentTab("biblico")}
+          className={`flux-mobile-nav__link ${currentTab === "biblico" ? "flux-mobile-nav__link--active" : ""}`}
+        >
+          <Cross aria-hidden="true" size={20} />
+          <span>Bíblico</span>
         </button>
 
         <button
           onClick={() => setCurrentTab("examenes")}
           className={`flux-mobile-nav__link ${currentTab === "examenes" ? "flux-mobile-nav__link--active" : ""}`}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="8" r="7" />
-            <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
-          </svg>
-          <span>Exámenes</span>
+          <HelpCircle aria-hidden="true" size={20} />
+          <span>Preguntas</span>
         </button>
 
         <button
           onClick={() => setCurrentTab("libro")}
           className={`flux-mobile-nav__link ${currentTab === "libro" ? "flux-mobile-nav__link--active" : ""}`}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-          </svg>
-          <span>Compilación</span>
-        </button>
-
-        <button
-          onClick={() => setCurrentTab("memoria")}
-          className={`flux-mobile-nav__link ${currentTab === "memoria" ? "flux-mobile-nav__link--active" : ""}`}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12 6 12 12 16 14" />
-          </svg>
-          <span>Memoria</span>
+          <BookOpen aria-hidden="true" size={20} />
+          <span>Libro</span>
         </button>
 
         <button
           onClick={() => setCurrentTab("planes")}
           className={`flux-mobile-nav__link ${currentTab === "planes" ? "flux-mobile-nav__link--active" : ""}`}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-          </svg>
+          <Calendar aria-hidden="true" size={20} />
           <span>Planes</span>
         </button>
 
         <button
-          onClick={() => { setCurrentTab("citas"); setAgent("profesor"); setChatMode("conversar"); }}
-          className={`flux-mobile-nav__link ${currentTab === "citas" ? "flux-mobile-nav__link--active" : ""}`}
+          onClick={() => setCurrentTab("telegram")}
+          className={`flux-mobile-nav__link ${currentTab === "telegram" ? "flux-mobile-nav__link--active" : ""}`}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21c3 0 7-1 7-8 0-3.5-2-7-3-7S4 10 4 13c0 2 1 3 1 3S3 18 3 21z"/><path d="M15 21c3 0 7-1 7-8 0-3.5-2-7-3-7s-3 3.5-3 6c0 2 1 3 1 3s-2 2-2 5z"/></svg>
-          <span>Citas</span>
+          <Send aria-hidden="true" size={20} />
+          <span>Telegram</span>
         </button>
 
         <button
-          onClick={() => { setCurrentTab("lecturas"); setAgent("profesor"); setChatMode("conversar"); }}
-          className={`flux-mobile-nav__link ${currentTab === "lecturas" ? "flux-mobile-nav__link--active" : ""}`}
+          onClick={() => setCurrentTab("diario")}
+          className={`flux-mobile-nav__link ${currentTab === "diario" ? "flux-mobile-nav__link--active" : ""}`}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8"/><path d="M8 11h6"/></svg>
-          <span>Lecturas</span>
+          <FileText aria-hidden="true" size={20} />
+          <span>Diario</span>
         </button>
 
         <button
-          onClick={() => { setCurrentTab("practicas"); setAgent("profesor"); setChatMode("conversar"); }}
-          className={`flux-mobile-nav__link ${currentTab === "practicas" ? "flux-mobile-nav__link--active" : ""}`}
+          onClick={() => setCurrentTab("memoria")}
+          className={`flux-mobile-nav__link ${currentTab === "memoria" ? "flux-mobile-nav__link--active" : ""}`}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>
-          <span>Prácticas</span>
+          <History aria-hidden="true" size={20} />
+          <span>Memoria</span>
         </button>
 
         <button
-          onClick={() => { setCurrentTab("biblico"); setAgent("profesor"); setChatMode("conversar"); }}
-          className={`flux-mobile-nav__link ${currentTab === "biblico" ? "flux-mobile-nav__link--active" : ""}`}
+          onClick={() => setCurrentTab("notas")}
+          className={`flux-mobile-nav__link ${currentTab === "notas" ? "flux-mobile-nav__link--active" : ""}`}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20"/><path d="M2 12h20"/></svg>
-          <span>Bíblico</span>
+          <StickyNote aria-hidden="true" size={20} />
+          <span>Notas</span>
         </button>
 
         <button
-          onClick={() => { setCurrentTab("glosario"); setAgent("profesor"); setChatMode("conversar"); }}
-          className={`flux-mobile-nav__link ${currentTab === "glosario" ? "flux-mobile-nav__link--active" : ""}`}
+          onClick={() => setCurrentTab("biblioteca")}
+          className={`flux-mobile-nav__link ${currentTab === "biblioteca" ? "flux-mobile-nav__link--active" : ""}`}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-          <span>Glosario</span>
-        </button>
-
-        <button
-          onClick={() => { setCurrentTab("testimonios"); setAgent("cuentacuentos"); setChatMode("conversar"); }}
-          className={`flux-mobile-nav__link ${currentTab === "testimonios" ? "flux-mobile-nav__link--active" : ""}`}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          <span>Testimonios</span>
+          <Library aria-hidden="true" size={20} />
+          <span>Fuentes</span>
         </button>
 
         <button
           onClick={() => setCurrentTab("perfil")}
           className={`flux-mobile-nav__link ${currentTab === "perfil" ? "flux-mobile-nav__link--active" : ""}`}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="3" />
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-          </svg>
-          <span>Perfil</span>
+          <UserCog aria-hidden="true" size={20} />
+          <span>Cuenta</span>
         </button>
       </nav>
     </div>

@@ -1057,7 +1057,6 @@ body {
   background: #131313;
   color: #FFFFFF;
   align-self: flex-end;
-  border-bottom-right-radius: 4px;
 }
 
 .flux-bubble--agent {
@@ -1065,7 +1064,6 @@ body {
   color: #131313;
   border: 1px solid #E8E8ED;
   align-self: flex-start;
-  border-bottom-left-radius: 4px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.01);
 }
 

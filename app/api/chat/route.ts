@@ -7,14 +7,18 @@ import {
   type SeccionId,
 } from "@/lib/gemini";
 import { supabase } from "@/lib/supabase";
+import { getCurrentUserId } from "@/lib/current-user";
+import { requireAccessToken } from "@/lib/auth-guard";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const USER_ID = "b938b4c3-e0a1-4333-b684-91d99bad7108";
-
 export async function POST(request: NextRequest) {
   try {
+    const denied = requireAccessToken(request);
+    if (denied) return denied;
+
+    const userId = getCurrentUserId();
     const body = await request.json();
 
     const mensaje: string = body.message;
@@ -62,6 +66,10 @@ export async function POST(request: NextRequest) {
       }
     }
     textosRelevantes = textosRelevantes.slice(0, 8);
+    console.log("RAG query:", mensaje);
+    console.log("Chunks recuperados:", textosRelevantes.length);
+    console.log("Fuentes:", textosRelevantes.map((t) => t.titulo));
+    console.log("NVIDIA model:", "meta/llama-3.3-70b-instruct");
 
     if (sessionId) {
       const agentMap: Record<string, string> = {
@@ -72,7 +80,7 @@ export async function POST(request: NextRequest) {
       await supabase.from("chat_sessions").upsert(
         {
           id: sessionId,
-          user_id: USER_ID,
+          user_id: userId,
           title: mensaje.slice(0, 100),
           agent: agentMap[agente] || agente || "instructor",
           locale: "es",
@@ -85,7 +93,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const contexto = construirContexto(textosRelevantes);
+    const { data: userMemories } = await supabase
+      .from("memoria")
+      .select("title, content, item_type, source")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    let memoriasContext = "";
+    if (userMemories && userMemories.length > 0) {
+      memoriasContext = "--- MEMORIA RECIENTE DEL USUARIO ---\n";
+      memoriasContext += userMemories.map((m: any) => `- [${m.source}] ${m.item_type}: ${typeof m.content === 'object' ? JSON.stringify(m.content) : m.content}`).join("\n");
+      memoriasContext += "\n------------------------------------\n\n";
+    }
+
+    if (!contextData.userName) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (profile?.display_name) {
+        contextData.userName = profile.display_name;
+      }
+    }
+
+    const contexto = memoriasContext + construirContexto(textosRelevantes);
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
@@ -107,7 +142,7 @@ export async function POST(request: NextRequest) {
           if (sessionId) {
             await supabase.from("content_artifacts").insert([
               {
-                user_id: USER_ID,
+                user_id: userId,
                 artifact_type: "chat_message",
                 language: "es",
                 title: mensaje.slice(0, 100),
@@ -117,7 +152,7 @@ export async function POST(request: NextRequest) {
                 source_id: sessionId,
               },
               {
-                user_id: USER_ID,
+                user_id: userId,
                 artifact_type: "chat_message",
                 language: "es",
                 title: mensaje.slice(0, 100),

@@ -31,12 +31,18 @@ anima/
 │   ├── layout.tsx
 │   └── page.tsx                # SPA completa (~2600 líneas)
 ├── lib/
+│   ├── anima-fetch.ts           # Fetch wrapper con token (client-side)
+│   ├── auth-guard.ts            # Validación de token en API routes
+│   ├── current-user.ts          # User ID desde env (placeholder pre-auth)
 │   ├── gemini.ts               # Orquestador multi-agente + API NVIDIA
 │   ├── biblioteca.ts           # Búsqueda vectorial + contexto RAG
-│   └── supabase.ts             # Cliente Supabase
+│   └── supabase.ts             # Cliente Supabase (server-side)
 ├── scripts/
-│   ├── tag_materials.mjs       # Etiquetado automático por keywords
+│   ├── embed_supabase_material_chunks.mjs  # Embeddings con Gemini
 │   ├── extract_artifacts.mjs   # Extracción de artefactos con NVIDIA
+│   ├── import_supabase_materials.mjs       # Importar materiales a Supabase
+│   ├── prepare_supabase_material_import.mjs# Generar SQL de importación
+│   ├── tag_materials.mjs       # Etiquetado automático por keywords
 │   └── test_extract.mjs        # Prueba de extracción
 ├── .env.local                  # Keys (NVIDIA, Supabase, Gemini)
 └── ANIMA.md                    # Este archivo
@@ -127,7 +133,28 @@ NVIDIA_API_KEY=nvapi-...
 SUPABASE_URL=https://...
 SUPABASE_SERVICE_ROLE_KEY=sb_secret_...
 GEMINI_API_KEY=AIza...
+ANIMA_DEFAULT_USER_ID=uuid-del-usuario
+ANIMA_API_ACCESS_TOKEN=token-secreto-compartido
+NEXT_PUBLIC_ANIMA_ACCESS_TOKEN=token-secreto-compartido
 ```
+
+> **Nota:** `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` se usan tanto en la app
+> Next.js (solo server-side, vía API Routes) como en los scripts CLI (`scripts/*.mjs`).
+> Ninguna variable de Supabase lleva el prefijo `NEXT_PUBLIC_` porque nunca se expone
+> al navegador.
+>
+> `ANIMA_DEFAULT_USER_ID` identifica al usuario por defecto mientras no haya login.
+> Si no está definida, las API routes devuelven error 500 con mensaje descriptivo.
+> Cuando se implemente autenticación, `lib/current-user.ts` se reemplazará por
+> resolución basada en sesión/token.
+>
+> **Protección temporal de API:** `ANIMA_API_ACCESS_TOKEN` es un secreto compartido
+> que las API routes protegidas verifican vía header `X-Anima-Access-Token`.
+> `NEXT_PUBLIC_ANIMA_ACCESS_TOKEN` es la misma clave expuesta al frontend para que
+> `animaFetch` la inyecte automáticamente. Ambas deben tener el mismo valor.
+> Si `ANIMA_API_ACCESS_TOKEN` no está definida, la protección se desactiva (dev local).
+> Rutas públicas: `/api/textos`, `/api/textos/detalle`, `/api/plans` (GET).
+> Esto es una medida temporal hasta implementar autenticación real.
 
 ## Tags disponibles (40)
 

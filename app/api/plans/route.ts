@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { requireAccessToken } from "@/lib/auth-guard";
 
 export const runtime = "nodejs";
 
@@ -15,6 +16,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const denied = requireAccessToken(request);
+  if (denied) return denied;
+
   const body = await request.json();
 
   const { data, error } = await supabase

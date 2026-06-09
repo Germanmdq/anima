@@ -1,3 +1,6 @@
+import OpenAI from "openai";
+import { AUTHOR_PROMPT, SECTION_PROMPTS } from "@/lib/prompts";
+
 export type AgenteId = "profesor" | "cuentacuentos" | "citas" | "lecturas" | "practicas" | "biblico" | "glosario" | "testimonios";
 export type SeccionId = "aula" | "biblioteca" | "examen" | "libro";
 export type ChatModeId = "conversar" | "preguntas" | "plan" | "libro" | "diario" | "presentacion";
@@ -10,6 +13,11 @@ export interface MensajeHistorial {
 const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
 const NVIDIA_BASE = "https://integrate.api.nvidia.com/v1";
 const MODEL = "meta/llama-3.3-70b-instruct";
+
+const client = new OpenAI({
+  baseURL: NVIDIA_BASE,
+  apiKey: NVIDIA_API_KEY,
+});
 
 export async function* generarRespuesta(
   agente: AgenteId,
@@ -31,6 +39,21 @@ export async function* generarRespuesta(
     : "historial de charlas, material estudiado, pruebas, planes, libros y diario";
 
   const systemInstruction = `Eres el Orquestador Principal de la plataforma Neville del Club de la Imaginación.
+
+IDENTIDAD DE PRODUCTO:
+Odiseo es el compañero de imaginación del usuario.
+
+PROMPT BASE COACH:
+${SECTION_PROMPTS.coach}
+
+PROMPT BASE NARRADOR:
+${SECTION_PROMPTS.narrator}
+
+PROMPT BASE BIBLIA METAFISICA:
+${SECTION_PROMPTS.biblical}
+
+CONTEXTO DE AUTOR:
+${AUTHOR_PROMPT}
 
 Tu trabajo es detectar la intención del usuario y responder como el agente adecuado.
 
@@ -107,7 +130,7 @@ MEMORIA Y ORQUESTACIÓN:
 - Modo actual del chat: ${chatMode}.
 - Memoria del usuario: ${useMemory ? "habilitada" : "deshabilitada"}.
 - Alcance de memoria disponible cuando esté habilitada: ${memoryScope}.
-- El chat es el centro de mando de Anima. Desde aquí el usuario puede pedir: responder una duda, generar preguntas, crear un plan de 7/15/30 días, diseñar un libro, escribir o analizar diario íntimo, preparar mensajes de Telegram, crear una infografía o armar una presentación tipo PowerPoint.
+- El chat es el centro de mando de Odiseo. Desde aquí el usuario puede pedir: responder una duda, generar preguntas, crear un plan de 7/15/30 días, diseñar un libro, escribir o analizar diario íntimo, preparar mensajes de Telegram, crear una infografía o armar una presentación tipo PowerPoint.
 - Si el usuario pide crear algo, responde como productor del artefacto, no lo mandes a otra sección. Indica claramente el tipo de artefacto, el material usado, los próximos pasos y el formato de salida.
 - Si el usuario pide "usar mi memoria", conecta historial, materiales, pruebas, planes, diario y libros como una red coherente. Si la memoria está deshabilitada, aclara que solo usarás el material recuperado en esta conversación.
 - Si el pedido requiere elegir entre varios artefactos previos y no están presentes en el contexto, pide una selección mínima y concreta.
@@ -172,56 +195,21 @@ ${contexto}`;
     { role: "user" as const, content: mensaje },
   ];
 
-  const response = await fetch(`${NVIDIA_BASE}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${NVIDIA_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
+  try {
+    const completion = await client.chat.completions.create({
       model: MODEL,
-      messages,
-      temperature: 0.5,
-      max_tokens: 2048,
-      stream: true,
-    }),
-  });
+      messages: messages as any,
+      temperature: 0.2,
+      top_p: 0.7,
+      max_tokens: 1024,
+      stream: false,
+    });
 
-  if (!response.ok) {
-    const errText = await response.text();
-    yield `Error: NVIDIA API ${response.status}: ${errText}`;
-    return;
-  }
-
-  const reader = response.body?.getReader();
-  if (!reader) {
-    yield "Error: No se pudo leer la respuesta.";
-    return;
-  }
-
-  const decoder = new TextDecoder();
-  let buffer = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() || "";
-
-    for (const line of lines) {
-      if (!line.startsWith("data: ")) continue;
-      const data = line.slice(6).trim();
-      if (!data || data === "[DONE]") continue;
-
-      try {
-        const parsed = JSON.parse(data);
-        const delta = parsed.choices?.[0]?.delta?.content;
-        if (delta) yield delta;
-      } catch {
-        // skip parse errors
-      }
-    }
+    const text = completion.choices?.[0]?.message?.content || "";
+    yield text;
+  } catch (error) {
+    console.error(error);
+    const errText = error instanceof Error ? error.message : "Error desconocido";
+    yield `Error: NVIDIA API: ${errText}`;
   }
 }

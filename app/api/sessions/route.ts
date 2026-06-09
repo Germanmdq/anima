@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { getCurrentUserId, missingUserResponse } from "@/lib/current-user";
+import { requireAccessToken } from "@/lib/auth-guard";
 
 export const runtime = "nodejs";
 
-const USER_ID = "b938b4c3-e0a1-4333-b684-91d99bad7108";
-
 export async function GET(request: NextRequest) {
+  const denied = requireAccessToken(request);
+  if (denied) return denied;
+
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
 
@@ -29,10 +32,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ session: data, messages: artifacts || [] });
   }
 
+  let userId: string;
+  try { userId = getCurrentUserId(); } catch { return missingUserResponse(); }
+
   const { data } = await supabase
     .from("chat_sessions")
     .select("id, title, agent, created_at, updated_at, metadata")
-    .eq("user_id", USER_ID)
+    .eq("user_id", userId)
     .order("updated_at", { ascending: false })
     .limit(20);
 
@@ -50,6 +56,12 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const denied = requireAccessToken(request);
+  if (denied) return denied;
+
+  let userId: string;
+  try { userId = getCurrentUserId(); } catch { return missingUserResponse(); }
+
   const body = await request.json();
 
   const agentMap: Record<string, string> = {
@@ -61,7 +73,7 @@ export async function POST(request: NextRequest) {
   const { data, error } = await supabase
     .from("chat_sessions")
     .insert({
-      user_id: USER_ID,
+      user_id: userId,
       title: body.title || "Nueva conversación",
       agent,
       locale: "es",
