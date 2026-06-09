@@ -10,14 +10,16 @@ export interface MensajeHistorial {
   content: string;
 }
 
-const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
 const NVIDIA_BASE = "https://integrate.api.nvidia.com/v1";
 const MODEL = "meta/llama-3.3-70b-instruct";
 
-const client = new OpenAI({
-  baseURL: NVIDIA_BASE,
-  apiKey: NVIDIA_API_KEY,
-});
+function getNvidiaClient(): OpenAI {
+  const apiKey = process.env.NVIDIA_API_KEY;
+  if (!apiKey) {
+    throw new Error("Missing NVIDIA_API_KEY environment variable");
+  }
+  return new OpenAI({ apiKey, baseURL: NVIDIA_BASE });
+}
 
 export async function* generarRespuesta(
   agente: AgenteId,
@@ -27,8 +29,11 @@ export async function* generarRespuesta(
   historial: MensajeHistorial[] = [],
   contextData?: any
 ): AsyncGenerator<string> {
-  if (!NVIDIA_API_KEY) {
-    yield "Error: NVIDIA_API_KEY no configurada.";
+  let client: OpenAI;
+  try {
+    client = getNvidiaClient();
+  } catch {
+    yield "Error: NVIDIA_API_KEY no configurada en el servidor.";
     return;
   }
 
