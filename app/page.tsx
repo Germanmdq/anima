@@ -12,7 +12,7 @@ import {
   ChevronDown,
   CircleUserRound,
   Cross,
-  Ellipsis,
+  Menu,
   GraduationCap,
   History,
   HomeIcon,
@@ -1413,34 +1413,34 @@ ${contenidoConsolidado}
               <div className="pub-orbital-center-wrap">
                 <div className="pub-orbital-center">
                   <svg width="44" height="44" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                    <circle cx="7" cy="7" r="5" stroke="#fff" strokeWidth="2"/>
+                    <circle cx="7" cy="7" r="5" stroke="#fff" strokeWidth="2.6"/>
                     <circle cx="7" cy="7" r="2" fill="#fff"/>
                   </svg>
                 </div>
                 <span className="pub-orbital-center-label">Odiseo</span>
               </div>
               <div className="pub-orbital-node" style={{ left: "80px", top: "20px" }}>
-                <div className="pub-orbital-node__circle"><MessageCircle size={24} stroke="#ff7a55" strokeWidth={1.7} fill="none"/></div>
+                <div className="pub-orbital-node__circle"><MessageCircle size={24} stroke="#ff8a66" strokeWidth={2.2} fill="none"/></div>
                 <span className="pub-orbital-node__label">Coach</span>
               </div>
               <div className="pub-orbital-node" style={{ left: "20px", top: "200px" }}>
-                <div className="pub-orbital-node__circle"><BookOpen size={24} stroke="#ff7a55" strokeWidth={1.7}/></div>
+                <div className="pub-orbital-node__circle"><BookOpen size={24} stroke="#ff8a66" strokeWidth={2.2}/></div>
                 <span className="pub-orbital-node__label">Narrador</span>
               </div>
               <div className="pub-orbital-node" style={{ left: "80px", top: "380px" }}>
-                <div className="pub-orbital-node__circle"><Star size={24} stroke="#ff7a55" strokeWidth={1.7}/></div>
+                <div className="pub-orbital-node__circle"><Star size={24} stroke="#ff8a66" strokeWidth={2.2}/></div>
                 <span className="pub-orbital-node__label">Testimonios</span>
               </div>
               <div className="pub-orbital-node" style={{ right: "80px", top: "20px" }}>
-                <div className="pub-orbital-node__circle"><Sun size={24} stroke="#ff7a55" strokeWidth={1.7}/></div>
+                <div className="pub-orbital-node__circle"><Sun size={24} stroke="#ff8a66" strokeWidth={2.2}/></div>
                 <span className="pub-orbital-node__label">Biblia</span>
               </div>
               <div className="pub-orbital-node" style={{ right: "20px", top: "200px" }}>
-                <div className="pub-orbital-node__circle"><Save size={24} stroke="#ff7a55" strokeWidth={1.7}/></div>
+                <div className="pub-orbital-node__circle"><Save size={24} stroke="#ff8a66" strokeWidth={2.2}/></div>
                 <span className="pub-orbital-node__label">Memoria</span>
               </div>
               <div className="pub-orbital-node" style={{ right: "80px", top: "380px" }}>
-                <div className="pub-orbital-node__circle"><PenLine size={24} stroke="#ff7a55" strokeWidth={1.7}/></div>
+                <div className="pub-orbital-node__circle"><PenLine size={24} stroke="#ff8a66" strokeWidth={2.2}/></div>
                 <span className="pub-orbital-node__label">Mi libro</span>
               </div>
             </div>
@@ -1481,27 +1481,27 @@ ${contenidoConsolidado}
                 <span className="pub-orbital-center-label pub-orbital-center-label--sm">Odiseo</span>
               </div>
               <div className="pub-orbital-node pub-orbital-node--sm" style={{ left: "28px", top: "5px" }}>
-                <div className="pub-orbital-node__circle"><MessageCircle size={21} stroke="#ff7a55" strokeWidth={1.7} fill="none"/></div>
+                <div className="pub-orbital-node__circle"><MessageCircle size={22} stroke="#ff8a66" strokeWidth={2.2} fill="none"/></div>
                 <span className="pub-orbital-node__label">Coach</span>
               </div>
               <div className="pub-orbital-node pub-orbital-node--sm" style={{ left: "12px", top: "194px" }}>
-                <div className="pub-orbital-node__circle"><BookOpen size={21} stroke="#ff7a55" strokeWidth={1.7}/></div>
+                <div className="pub-orbital-node__circle"><BookOpen size={22} stroke="#ff8a66" strokeWidth={2.2}/></div>
                 <span className="pub-orbital-node__label">Narrador</span>
               </div>
               <div className="pub-orbital-node pub-orbital-node--sm" style={{ left: "28px", bottom: "0px" }}>
-                <div className="pub-orbital-node__circle"><Star size={21} stroke="#ff7a55" strokeWidth={1.7}/></div>
+                <div className="pub-orbital-node__circle"><Star size={22} stroke="#ff8a66" strokeWidth={2.2}/></div>
                 <span className="pub-orbital-node__label">Testimonios</span>
               </div>
               <div className="pub-orbital-node pub-orbital-node--sm" style={{ right: "28px", top: "5px" }}>
-                <div className="pub-orbital-node__circle"><Sun size={21} stroke="#ff7a55" strokeWidth={1.7}/></div>
+                <div className="pub-orbital-node__circle"><Sun size={22} stroke="#ff8a66" strokeWidth={2.2}/></div>
                 <span className="pub-orbital-node__label">Biblia</span>
               </div>
               <div className="pub-orbital-node pub-orbital-node--sm" style={{ right: "12px", top: "194px" }}>
-                <div className="pub-orbital-node__circle"><Save size={21} stroke="#ff7a55" strokeWidth={1.7}/></div>
+                <div className="pub-orbital-node__circle"><Save size={22} stroke="#ff8a66" strokeWidth={2.2}/></div>
                 <span className="pub-orbital-node__label">Memoria</span>
               </div>
               <div className="pub-orbital-node pub-orbital-node--sm" style={{ right: "28px", bottom: "0px" }}>
-                <div className="pub-orbital-node__circle"><PenLine size={21} stroke="#ff7a55" strokeWidth={1.7}/></div>
+                <div className="pub-orbital-node__circle"><PenLine size={22} stroke="#ff8a66" strokeWidth={2.2}/></div>
                 <span className="pub-orbital-node__label">Mi libro</span>
               </div>
             </div>
@@ -2026,9 +2026,7 @@ ${contenidoConsolidado}
             )}
 
             {loadingLib ? (
-              <div style={{ display: "flex", justifyContent: "center", padding: "60px 0" }}>
-                <CargandoCerebro label="Cargando fuentes..." />
-              </div>
+              <SkeletonList rows={5} />
             ) : textosFiltrados.length === 0 ? (
               <p style={{ textAlign: "center", padding: "40px 0", color: "var(--color-muted)", fontSize: "14px", fontFamily: "var(--font-base)" }}>No se encontraron fuentes.</p>
             ) : (
@@ -2157,9 +2155,7 @@ ${contenidoConsolidado}
                     <p>Completá el formulario y generá tu set de preguntas.</p>
                   </div>
                 ) : examLoading ? (
-                  <div className="exam-empty">
-                    <CargandoCerebro label="Preparando preguntas..." />
-                  </div>
+                  <SkeletonList rows={4} />
                 ) : examQuestions.length === 0 ? (
                   <div className="exam-empty">
                     <p style={{ color: "var(--color-muted)", fontSize: "14px" }}>No se pudieron generar preguntas. Intentá de nuevo.</p>
@@ -2529,9 +2525,7 @@ ${contenidoConsolidado}
 
             {/* Lista de planes disponibles */}
             {loadingPlanes ? (
-              <div style={{ display: "flex", justifyContent: "center", padding: "40px 0" }}>
-                <CargandoCerebro label="Cargando planes..." />
-              </div>
+              <SkeletonList rows={3} />
             ) : planes.length === 0 ? (
               <div className="planes-empty">
                 <MapIconLucide size={32} style={{ color: "var(--color-muted)" }} />
@@ -2864,10 +2858,25 @@ ${contenidoConsolidado}
           onClick={() => setMobileNavGroup(mobileNavGroup === "mas" ? null : "mas")}
           className={`nav-item${["diario","notas","memoria","perfil"].includes(currentTab) ? " active" : ""}${mobileNavGroup === "mas" ? " open" : ""}`}
         >
-          <Ellipsis size={22} className="nav-icon-svg"/>
+          <Menu size={22} className="nav-icon-svg"/>
           <span className="nav-label">Más</span>
         </button>
       </nav>
+    </div>
+  );
+}
+
+// ─── Skeleton list (reemplaza spinners en listas) ────────
+function SkeletonList({ rows = 4 }: { rows?: number }) {
+  return (
+    <div className="skeleton-list">
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="skeleton-card">
+          <div className="skeleton-line" style={{ width: `${55 + (i % 3) * 15}%`, height: 16 }} />
+          <div className="skeleton-line" style={{ width: `${75 + (i % 2) * 10}%`, height: 13 }} />
+          <div className="skeleton-line" style={{ width: "50%", height: 13 }} />
+        </div>
+      ))}
     </div>
   );
 }

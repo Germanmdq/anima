@@ -1823,18 +1823,20 @@ details.ods-pub-faq-item[open] .ods-pub-faq-q__pm { transform: rotate(45deg); }
 
 /* ── Bottom nav (mobile-first: visible en mobile, oculto en ≥768px) ── */
 .bottom-nav {
-  background: rgba(242, 242, 247, 0.95);
-  border-top: 0.5px solid var(--color-border);
-  padding: 10px 0 16px;
-  display: flex;
-  justify-content: space-around;
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 0.5px solid rgba(0, 0, 0, 0.08);
+  padding-top: 8px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
   z-index: 200;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
 }
 
 @media (min-width: 768px) {
@@ -1968,28 +1970,45 @@ details.ods-pub-faq-item[open] .ods-pub-faq-q__pm { transform: rotate(45deg); }
 .nav-item.active .nav-label { color: var(--color-accent); }
 .nav-item.open   .nav-label { color: var(--color-accent); }
 
-/* ── Submenu overlay ── */
+/* ── Bottom sheet overlay (submenú + "Usar en…") ── */
+@keyframes bs-fade-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes bs-slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
 .nav-submenu-overlay {
   position: fixed;
   inset: 0;
   z-index: 199;
-  background: rgba(0, 0, 0, 0.28);
+  background: rgba(0, 0, 0, 0.40);
   display: flex;
   align-items: flex-end;
+  animation: bs-fade-in 200ms ease;
 }
 
 .nav-submenu {
   width: 100%;
-  background: var(--color-surface);
-  border-top: 0.5px solid var(--color-border);
+  background: #ffffff;
   border-radius: 20px 20px 0 0;
-  padding: 12px 16px 90px;
+  padding: 0 16px max(20px, env(safe-area-inset-bottom));
+  padding-top: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  max-height: 72dvh;
+  max-height: 75dvh;
   overflow-y: auto;
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.10);
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.14);
+  animation: bs-slide-up 280ms cubic-bezier(0.32, 0.72, 0.27, 1);
+}
+
+/* Handle visual */
+.nav-submenu::before {
+  content: "";
+  display: block;
+  width: 36px;
+  height: 4px;
+  background: #d1d1d6;
+  border-radius: 2px;
+  margin: 12px auto 10px;
+  flex-shrink: 0;
 }
 
 .nav-submenu-title {
@@ -1999,7 +2018,7 @@ details.ods-pub-faq-item[open] .ods-pub-faq-q__pm { transform: rotate(45deg); }
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--color-muted);
-  padding: 6px 4px 12px;
+  padding: 4px 4px 10px;
 }
 
 .nav-submenu-item {
@@ -2017,10 +2036,50 @@ details.ods-pub-faq-item[open] .ods-pub-faq-q__pm { transform: rotate(45deg); }
   border-radius: var(--radius-md);
   text-align: left;
   -webkit-tap-highlight-color: transparent;
+  min-height: 52px;
 }
 
-.nav-submenu-item:active { background: var(--color-bg); }
+.nav-submenu-item:active { background: var(--color-bg); transform: scale(0.98); }
 .nav-submenu-item--accent { color: var(--color-accent); }
+
+/* ── Generic bottom sheet (para "Usar en…" y otros modales) ── */
+.bottom-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.40);
+  z-index: 300;
+  display: flex;
+  align-items: flex-end;
+  animation: bs-fade-in 200ms ease;
+}
+
+.bottom-sheet {
+  width: 100%;
+  background: #fff;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  padding: 0 20px max(20px, env(safe-area-inset-bottom));
+  animation: bs-slide-up 280ms cubic-bezier(0.32, 0.72, 0.27, 1);
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+.bottom-sheet::before {
+  content: "";
+  display: block;
+  width: 36px;
+  height: 4px;
+  background: #d1d1d6;
+  border-radius: 2px;
+  margin: 12px auto 14px;
+}
+
+.bottom-sheet-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 8px;
+}
 
 /* ── Mobile dashboard cards ── */
 .ods-mobile-dash {
@@ -4470,3 +4529,37 @@ details.ods-pub-faq-item[open] .ods-pub-faq-q__pm { transform: rotate(45deg); }
 .book-chapter.open .chapter-chevron { transform: rotate(180deg); }
 .chapter-content { display: none; padding: 0 0 16px 40px; font-size: 14px; line-height: 1.6; color: #1d1d1f; font-family: var(--font-base); }
 .book-chapter.open .chapter-content { display: block; }
+
+/* ================================================================
+   NATIVE FEEL — Tap targets, safe areas, native-like feel
+   ================================================================ */
+
+/* ── 44×44 minimum tap target ── */
+.icon-button {
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+
+@media (max-width: 860px) {
+  /* Ensure all close/icon buttons have minimum tap area */
+  .flux-modal-header button,
+  .nav-submenu-overlay > * > button,
+  .odiseo-topbar button,
+  .odiseo-profile-popup button,
+  .alpha-header {
+    min-height: 44px;
+  }
+  /* Bottom nav items already full-width, ensure height */
+  .nav-item {
+    min-height: 48px;
+    padding: 6px 0 4px;
+  }
+}
