@@ -443,6 +443,7 @@
 .odiseo-viewport {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   min-height: 0;
   background: var(--color-bg);
   display: flex;
@@ -3174,6 +3175,8 @@ details.ods-pub-faq-item[open] .ods-pub-faq-q__pm { transform: rotate(45deg); }
   flex-direction: column;
   align-items: center;
   text-align: center;
+  overflow: hidden;
+  width: 100%;
 }
 .pub-hero__top {
   display: flex;
@@ -3211,7 +3214,7 @@ details.ods-pub-faq-item[open] .ods-pub-faq-q__pm { transform: rotate(45deg); }
 .pub-orbital-wrap {
   position: relative;
   width: 100%;
-  overflow: visible;
+  overflow: hidden;
 }
 .pub-orbital-wrap--desktop {
   display: block;
@@ -4089,6 +4092,7 @@ details.ods-pub-faq-item[open] .ods-pub-faq-q__pm { transform: rotate(45deg); }
   padding: 20px 20px 100px;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
 /* ── Greeting header ── */
@@ -4309,10 +4313,24 @@ details.ods-pub-faq-item[open] .ods-pub-faq-q__pm { transform: rotate(45deg); }
   }
 }
 
-/* ── Mobile: single column grid ── */
+/* ── Mobile: single column grid + badge as full-width card ── */
 @media (max-width: 767px) {
   .dash-tool-grid { grid-template-columns: 1fr; }
-  .plan-badge { width: 100%; justify-content: center; }
+  /* Stack header vertically so badge drops below greeting, not beside it */
+  .dash-header {
+    flex-direction: column;
+    gap: 14px;
+    padding-bottom: 20px;
+  }
+  /* Badge becomes full-width card row */
+  .plan-badge {
+    width: 100%;
+    justify-content: flex-start;
+    border-radius: 14px;
+    padding: 14px 18px;
+    font-size: 14px;
+    background: rgba(232,64,26,0.08);
+  }
 }
 
 /* ── Preguntas layout ── */
@@ -4561,5 +4579,42 @@ details.ods-pub-faq-item[open] .ods-pub-faq-q__pm { transform: rotate(45deg); }
   .nav-item {
     min-height: 48px;
     padding: 6px 0 4px;
+  }
+}
+
+/* ================================================================
+   NO HORIZONTAL SCROLL — Clamp all containers to viewport width
+   ================================================================ */
+@media (max-width: 860px) {
+  /* Every section wrapping content must not exceed viewport */
+  .dash-wrap,
+  .exam-wrap,
+  .alpha-wrap,
+  .mem-wrap,
+  .pub-bento,
+  .pub-bento__inner,
+  .pub-cta-section,
+  .pub-cta-box,
+  .pub-testi-wrap,
+  .testi-layout,
+  .journal-wrap,
+  .notes-wrap {
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+  /* Remove any fixed widths on inner cards that could bleed */
+  .pub-card,
+  .pub-chat-preview,
+  .pub-memoria-list,
+  .testi-card,
+  .dash-tool-card {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  /* Viewport already has overflow-x hidden, but reinforce on odiseo-main */
+  .odiseo-main {
+    overflow-x: hidden;
+    max-width: 100%;
   }
 }
