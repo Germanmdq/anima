@@ -68,52 +68,49 @@ export default function BiblicaView({ sendToSection }: BiblicaViewProps) {
     `Concepto:\n${result.title}\n\nFuente:\n${result.source_title || "Fuente no especificada"} ${result.source_year || ""}\n\nExplicación:\n${result.body}${result.practical_application ? `\n\nAplicación práctica:\n${result.practical_application}` : ""}`;
 
   const symbolActions = [
-    { label: "Aplicarlo a mi estado", icon: <MessageSquareText size={14} />, tab: "aula", prompt: (result: any, originalQuery: string) => `Quiero entender este símbolo o explicación bíblica desde Neville.\n\n${buildPromptContext(result, originalQuery)}\n\nAplicalo a mi estado actual y a mi práctica de imaginación.` },
-    { label: "Explicarlo con ejemplo", icon: <Sparkles size={14} />, tab: "narrador", prompt: (result: any, originalQuery: string) => `${QUICK_ACTION_PROMPTS.narrator}\n\nExplicalo con un ejemplo cotidiano y concreto.\n\n${buildPromptContext(result, originalQuery)}` },
-    { label: "Crear preguntas", icon: <HelpCircle size={14} />, tab: "examenes", prompt: (result: any, originalQuery: string) => `${QUICK_ACTION_PROMPTS.questions}\n\n${buildPromptContext(result, originalQuery)}` },
-    { label: "Guardar como concepto", icon: <BookOpen size={14} />, tab: "memoria", prompt: (result: any) => buildRawContext(result) },
+    { label: "Aplicarlo a mi estado", icon: <MessageSquareText size={13} />, tab: "aula",
+      prompt: (result: any, q: string) => `Quiero entender este símbolo o explicación bíblica desde Neville.\n\n${buildPromptContext(result, q)}\n\nAplicalo a mi estado actual y a mi práctica de imaginación.` },
+    { label: "Explicarlo con ejemplo", icon: <Sparkles size={13} />, tab: "narrador",
+      prompt: (result: any, q: string) => `${QUICK_ACTION_PROMPTS.narrator}\n\nExplicalo con un ejemplo cotidiano y concreto.\n\n${buildPromptContext(result, q)}` },
+    { label: "Crear preguntas", icon: <HelpCircle size={13} />, tab: "examenes",
+      prompt: (result: any, q: string) => `${QUICK_ACTION_PROMPTS.questions}\n\n${buildPromptContext(result, q)}` },
+    { label: "Guardar como concepto", icon: <BookOpen size={13} />, tab: "memoria",
+      prompt: (result: any) => buildRawContext(result) },
   ];
 
   return (
-    <div style={{ padding: "40px 24px", maxWidth: "900px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "24px" }}>
-      <header className="content-header">
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
-          <div style={{ backgroundColor: "var(--swiss-accent)", color: "#fff", padding: "12px", borderRadius: "16px" }}>
-            <Cross size={24} />
-          </div>
-          <h2 className="flux-title" style={{ fontSize: "32px", textTransform: "uppercase", fontWeight: 900, margin: 0, letterSpacing: "-0.02em" }}>
-            Biblia metafísica
-          </h2>
-        </div>
-        <p className="flux-subtitle" style={{ fontSize: "18px", color: "var(--swiss-fg)", fontWeight: 500, marginBottom: "4px" }}>
+    <div style={{ padding: "24px 20px 100px", maxWidth: "900px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "24px" }}>
+      <header>
+        <h2 style={{ fontSize: "19px", fontWeight: 700, margin: "0 0 4px", fontFamily: "var(--font-base)", color: "var(--color-dark)" }}>
+          Biblia metafísica
+        </h2>
+        <p style={{ fontSize: "14px", color: "var(--color-muted)", margin: 0, fontFamily: "var(--font-base)" }}>
           ¿Qué símbolo o situación querés entender?
         </p>
       </header>
 
-      <div style={{ backgroundColor: "var(--swiss-bg)", border: "2px solid #000", borderRadius: "22px", padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+      {/* Buscador */}
+      <div style={{ background: "var(--color-surface)", border: "0.5px solid var(--color-border)", borderRadius: "var(--radius-lg)", padding: "20px", display: "flex", flexDirection: "column", gap: "14px", boxShadow: "var(--shadow-card)" }}>
         <textarea
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder='Ejemplo: Moisés, Egipto, Cristo, Judas, Yo Soy, Resurrección, o "siento que estoy atrapado en lo viejo"...'
-          style={{ width: "100%", minHeight: "100px", padding: "16px", borderRadius: "16px", border: "2px solid var(--swiss-border)", backgroundColor: "var(--swiss-muted)", fontSize: "15px", color: "var(--swiss-fg)", resize: "vertical" }}
+          style={{ width: "100%", minHeight: "96px", padding: "14px 16px", borderRadius: "var(--radius-sm)", border: "0.5px solid var(--color-border)", background: "var(--color-bg)", fontSize: "15px", fontFamily: "var(--font-base)", color: "var(--color-dark)", resize: "vertical", outline: "none", boxSizing: "border-box" }}
         />
         <button
           onClick={() => handleSearch(query)}
           disabled={isSearching}
-          style={{ backgroundColor: "var(--swiss-accent)", color: "#fff", border: "none", borderRadius: "16px", padding: "16px", fontSize: "16px", fontWeight: 900, textTransform: "uppercase", cursor: isSearching ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", opacity: isSearching ? 0.7 : 1 }}
+          style={{ background: "var(--color-accent)", color: "#fff", border: "none", borderRadius: "var(--radius-md)", padding: "14px 16px", fontSize: "16px", fontWeight: 600, fontFamily: "var(--font-base)", cursor: isSearching ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", opacity: isSearching ? 0.7 : 1 }}
         >
-          {isSearching ? <Loader2 size={20} className="animate-spin" /> : <Search size={20} />}
+          {isSearching ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
           {isSearching ? "Buscando..." : "Buscar explicación bíblica"}
         </button>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
           {simbolos.map((symbol) => (
             <button
               key={symbol}
-              onClick={() => {
-                setQuery(symbol);
-                handleSearch(symbol);
-              }}
-              style={{ padding: "6px 12px", fontSize: "12px", fontWeight: 600, borderRadius: "16px", border: "1.5px solid var(--swiss-border)", backgroundColor: "var(--swiss-bg)", color: "var(--swiss-fg)", cursor: "pointer" }}
+              onClick={() => { setQuery(symbol); handleSearch(symbol); }}
+              style={{ padding: "6px 14px", fontSize: "13px", fontWeight: 500, borderRadius: "100px", border: "0.5px solid var(--color-border)", background: "var(--color-bg)", color: "var(--color-dark)", cursor: "pointer", fontFamily: "var(--font-base)" }}
             >
               {symbol}
             </button>
@@ -121,52 +118,57 @@ export default function BiblicaView({ sendToSection }: BiblicaViewProps) {
         </div>
       </div>
 
+      {/* Resultados */}
       {hasSearched && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           {results.length > 0 ? (
             results.map((result) => (
-              <div key={result.id} style={{ backgroundColor: "var(--swiss-bg)", border: "2px solid #000", borderRadius: "22px", padding: "24px", display: "flex", flexDirection: "column", gap: "12px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
-                  <h3 style={{ fontSize: "20px", fontWeight: 900, textTransform: "uppercase", color: "var(--swiss-fg)", margin: 0 }}>{result.title}</h3>
-                  <span style={{ fontSize: "11px", fontWeight: 800, textTransform: "uppercase", backgroundColor: "var(--swiss-muted)", padding: "4px 8px", borderRadius: "8px", color: "var(--swiss-text-muted)" }}>
+              <div key={result.id} style={{ background: "var(--color-surface)", border: "0.5px solid var(--color-border)", borderRadius: "var(--radius-lg)", padding: "20px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "var(--shadow-card)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", alignItems: "flex-start" }}>
+                  <h3 style={{ fontSize: "17px", fontWeight: 600, color: "var(--color-accent)", margin: 0, fontFamily: "var(--font-base)" }}>
+                    {result.title}
+                  </h3>
+                  <span style={{ fontSize: "11px", fontWeight: 500, background: "var(--color-bg)", padding: "3px 10px", borderRadius: "100px", color: "var(--color-muted)", border: "0.5px solid var(--color-border)", fontFamily: "var(--font-base)", flexShrink: 0 }}>
                     {result.subtype}
                   </span>
                 </div>
-                {result.subtitle && <p style={{ fontSize: "13px", fontWeight: 700, color: "var(--swiss-text-muted)", margin: 0 }}>{result.subtitle}</p>}
-                <p style={{ fontSize: "14px", fontWeight: 500, color: "var(--swiss-fg)", lineHeight: "1.6", whiteSpace: "pre-wrap", margin: 0 }}>{result.body}</p>
+                {result.subtitle && (
+                  <p style={{ fontSize: "13px", color: "var(--color-muted)", margin: 0, fontFamily: "var(--font-base)" }}>{result.subtitle}</p>
+                )}
+                <p style={{ fontSize: "14px", color: "var(--color-dark)", lineHeight: "1.65", whiteSpace: "pre-wrap", margin: 0, fontFamily: "var(--font-base)" }}>{result.body}</p>
                 {result.practical_application && (
-                  <p style={{ fontSize: "12px", fontWeight: 700, color: "var(--swiss-text-muted)", lineHeight: "1.6", margin: 0 }}>
+                  <p style={{ fontSize: "13px", color: "var(--color-muted)", lineHeight: "1.6", margin: 0, fontFamily: "var(--font-base)" }}>
                     {result.practical_application}
                   </p>
                 )}
                 {(result.source_title || result.source_year) && (
-                  <p style={{ fontSize: "12px", color: "var(--swiss-text-muted)", margin: 0 }}>
+                  <p style={{ fontSize: "11px", color: "var(--color-muted)", margin: 0, fontFamily: "var(--font-base)" }}>
                     {result.source_title || "Fuente no especificada"} {result.source_year ? `(${result.source_year})` : ""}
                   </p>
                 )}
                 {Array.isArray(result.tags) && result.tags.length > 0 && (
                   <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                     {result.tags.map((tag: string) => (
-                      <span key={`${result.id}-${tag}`} style={{ fontSize: "10px", fontWeight: 800, backgroundColor: "#000", color: "#fff", padding: "2px 8px", borderRadius: "10px", textTransform: "uppercase" }}>
+                      <span key={`${result.id}-${tag}`} style={{ fontSize: "11px", fontWeight: 500, background: "var(--color-bg)", color: "var(--color-muted)", padding: "3px 10px", borderRadius: "100px", border: "0.5px solid var(--color-border)", fontFamily: "var(--font-base)" }}>
                         {tag}
                       </span>
                     ))}
                   </div>
                 )}
-                <div style={{ borderTop: "2px solid var(--swiss-border)", paddingTop: "12px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px" }}>
-                  <span style={{ fontSize: "11px", fontWeight: 900, color: "var(--swiss-text-muted)" }}>
+                <div style={{ borderTop: "0.5px solid var(--color-border)", paddingTop: "12px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px" }}>
+                  <span style={{ fontSize: "11px", fontWeight: 500, color: "var(--color-muted)", fontFamily: "var(--font-base)" }}>
                     Seguir con esto:
                   </span>
                   {symbolActions.map((action) => (
                     <button
                       key={`${result.id}-${action.label}`}
+                      className="coach-quick-btn"
                       onClick={() => sendToSection(action.tab, {
                         source: "Biblia metafísica",
                         title: result.title,
                         action: action.label === "Guardar como concepto" ? "concepto" : action.tab === "aula" ? "coach" : action.tab,
                         content: action.prompt(result, query),
                       })}
-                      style={{ padding: "7px 12px", fontSize: "11px", fontWeight: 900, borderRadius: "999px", border: "1.5px solid #000", backgroundColor: "var(--swiss-bg)", color: "var(--swiss-fg)", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
                     >
                       {action.icon} {action.label}
                     </button>
@@ -175,7 +177,7 @@ export default function BiblicaView({ sendToSection }: BiblicaViewProps) {
               </div>
             ))
           ) : (
-            <div style={{ backgroundColor: "var(--swiss-muted)", border: "2px dashed var(--swiss-border)", borderRadius: "22px", padding: "32px 24px", textAlign: "center" }}>
+            <div style={{ background: "var(--color-surface)", border: "0.5px solid var(--color-border)", borderRadius: "var(--radius-lg)", padding: "32px 24px", textAlign: "center", color: "var(--color-muted)", fontSize: "15px", fontFamily: "var(--font-base)" }}>
               No encontré resultados bíblicos para esa búsqueda en los artifacts publicados.
             </div>
           )}

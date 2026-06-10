@@ -134,15 +134,16 @@ Cuando te descubras abrumado por la evidencia externa:
     <div className="flux-modal-overlay" style={{ zIndex: 1100 }}>
       <div 
         className="flux-modal-content" 
-        style={{ 
-          maxWidth: "800px", 
-          border: "4px solid var(--swiss-border)", 
-          borderRadius: "22px",
-          overflow: "hidden"
+        style={{
+          maxWidth: "800px",
+          border: "0.5px solid var(--color-border)",
+          borderRadius: "var(--radius-xl)",
+          overflow: "hidden",
+          boxShadow: "0 8px 40px rgba(0,0,0,0.12)"
         }}
       >
         {/* Header */}
-        <div className="flux-modal-header" style={{ borderBottom: "4px solid var(--swiss-border)", padding: "20px 32px" }}>
+        <div className="flux-modal-header" style={{ borderBottom: "0.5px solid var(--color-border)", padding: "20px 32px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             {selectedNoteId !== null && (
               <button 
@@ -156,8 +157,8 @@ Cuando te descubras abrumado por la evidencia externa:
               <span className="flux-chat-header__eyebrow" style={{ color: "var(--swiss-accent)" }}>
                 {selectedNoteId === null ? "Notas de Imaginalia" : "Lectura Aplicada"}
               </span>
-              <h2 className="flux-modal-title" style={{ fontSize: "22px", fontWeight: 900, textTransform: "uppercase" }}>
-                {selectedNoteId === null ? "Notas y Dieta Mental" : selectedNote?.title}
+              <h2 className="flux-modal-title" style={{ fontSize: "19px", fontWeight: 700, fontFamily: "var(--font-base)", color: "var(--color-dark)" }}>
+                {selectedNoteId === null ? "Notas" : selectedNote?.title}
               </h2>
             </div>
           </div>
@@ -184,29 +185,30 @@ Cuando te descubras abrumado por la evidencia externa:
                   key={note.id}
                   onClick={() => setSelectedNoteId(note.id)}
                   style={{
-                    backgroundColor: "var(--swiss-bg)",
-                    border: "3px solid var(--swiss-border)",
-                    borderRadius: "22px",
+                    backgroundColor: "var(--color-surface)",
+                    border: "0.5px solid var(--color-border)",
+                    borderRadius: "var(--radius-lg)",
                     padding: "20px",
                     cursor: "pointer",
-                    transition: "transform 0.15s ease, border-color 0.15s ease"
+                    boxShadow: "var(--shadow-card)",
+                    transition: "box-shadow 0.15s, transform 0.15s"
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "var(--swiss-accent)";
+                    e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.10)";
                     e.currentTarget.style.transform = "translateY(-2px)";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = "var(--swiss-border)";
+                    e.currentTarget.style.boxShadow = "var(--shadow-card)";
                     e.currentTarget.style.transform = "translateY(0)";
                   }}
                 >
-                  <h3 style={{ fontSize: "16px", fontWeight: 900, textTransform: "uppercase", marginBottom: "8px", color: "var(--swiss-fg)" }}>
+                  <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "var(--color-dark)", fontFamily: "var(--font-base)" }}>
                     {note.title}
                   </h3>
                   <p style={{ fontSize: "12.5px", lineHeight: "1.5", color: "var(--swiss-text-muted)", fontWeight: 500 }}>
                     {note.excerpt}
                   </p>
-                  <span style={{ fontSize: "11px", fontWeight: 900, color: "var(--swiss-accent)", marginTop: "12px", display: "inline-block", textTransform: "uppercase" }}>
+                  <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--color-accent)", marginTop: "12px", display: "inline-block", fontFamily: "var(--font-base)" }}>
                     Leer nota →
                   </span>
                 </div>
@@ -215,32 +217,33 @@ Cuando te descubras abrumado por la evidencia externa:
           ) : (
             /* Selected note content */
             <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-              <div 
-                style={{ 
-                  fontSize: "14.5px", 
-                  lineHeight: "1.7", 
-                  color: "var(--swiss-fg)", 
-                  fontWeight: 500, 
+              <div
+                style={{
+                  fontSize: "14.5px",
+                  lineHeight: "1.7",
+                  color: "var(--color-dark)",
+                  fontWeight: 400,
                   whiteSpace: "pre-line",
-                  backgroundColor: "var(--swiss-bg)",
-                  border: "3px solid var(--swiss-border)",
-                  borderRadius: "22px",
-                  padding: "24px"
+                  backgroundColor: "var(--color-surface)",
+                  border: "0.5px solid var(--color-border)",
+                  borderRadius: "var(--radius-lg)",
+                  padding: "24px",
+                  fontFamily: "var(--font-base)"
                 }}
               >
                 {selectedNote?.content}
               </div>
 
               {/* CTAs banner */}
-              <div 
-                style={{ 
-                  borderTop: "3px solid var(--swiss-border)", 
-                  paddingTop: "24px",
-                  marginTop: "8px"
+              <div
+                style={{
+                  borderTop: "0.5px solid var(--color-border)",
+                  paddingTop: "20px",
+                  marginTop: "4px"
                 }}
               >
-                <h4 style={{ fontSize: "12px", fontWeight: 900, textTransform: "uppercase", marginBottom: "16px", color: "var(--swiss-fg)", letterSpacing: "0.05em" }}>
-                  Trabajar esta lectura en Imaginalia:
+                <h4 style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "14px", color: "var(--color-muted)", fontFamily: "var(--font-base)" }}>
+                  Trabajar esta nota:
                 </h4>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "12px" }}>
                   {selectedNote?.ctas.map((cta, index) => (
@@ -272,11 +275,10 @@ Cuando te descubras abrumado por la evidencia externa:
         </div>
 
         {/* Footer */}
-        <div className="flux-modal-footer" style={{ borderTop: "4px solid var(--swiss-border)", padding: "16px 32px" }}>
-          <button 
-            onClick={onClose} 
-            className="swiss-landing-secondary-btn" 
-            style={{ padding: "10px 20px", fontSize: "12px", border: "2px solid var(--swiss-border)", borderRadius: "22px" }}
+        <div className="flux-modal-footer" style={{ borderTop: "0.5px solid var(--color-border)", padding: "16px 32px" }}>
+          <button
+            onClick={onClose}
+            className="coach-quick-btn"
           >
             Cerrar
           </button>

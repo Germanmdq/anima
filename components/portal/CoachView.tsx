@@ -114,28 +114,16 @@ export default function CoachView({
       }}
     >
       <header style={{ marginBottom: "10px", flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
-          <div style={{
-            backgroundColor: "var(--swiss-accent)",
-            color: "#fff",
-            padding: "9px",
-            borderRadius: "14px"
-          }}>
-            <MessageSquareText size={20} />
-          </div>
-
-          <h1 style={{
-            fontSize: "28px",
-            textTransform: "uppercase",
-            fontWeight: 900,
-            margin: 0,
-            letterSpacing: 0
-          }}>
-            Coach
-          </h1>
-        </div>
-
-        <p style={{ fontSize: "16px", color: "var(--swiss-fg)", fontWeight: 800, margin: 0 }}>
+        <h1 style={{
+          fontSize: "19px",
+          fontWeight: 700,
+          margin: "0 0 4px",
+          fontFamily: "var(--font-base)",
+          color: "var(--color-dark)"
+        }}>
+          Coach
+        </h1>
+        <p style={{ fontSize: "14px", color: "var(--color-muted)", fontWeight: 500, margin: 0, fontFamily: "var(--font-base)" }}>
           Trabajá tu deseo con una guía directa.
         </p>
       </header>
@@ -208,13 +196,14 @@ export default function CoachView({
 
                   {msg.role === "model" && msg.content && (
                     <div style={{ marginLeft: "12px", display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", maxWidth: "min(900px, 88%)" }}>
-                      <span style={{ fontSize: "11px", fontWeight: 900, color: "var(--swiss-text-muted)" }}>
+                      <span style={{ fontSize: "11px", fontWeight: 500, color: "var(--color-muted)", fontFamily: "var(--font-base)" }}>
                         Seguir con esto:
                       </span>
                       {quickActions.map((action, i) => (
                         <button
                           key={i}
                           type="button"
+                          className="coach-quick-btn"
                           onClick={() => {
                             const content = action.content(msg.content);
                             if (action.action === "coach" && onQuickSend) {
@@ -227,28 +216,6 @@ export default function CoachView({
                               action: action.action || action.tab,
                               content
                             });
-                          }}
-                          style={{
-                            padding: "6px 11px",
-                            fontSize: "11px",
-                            fontWeight: 800,
-                            borderRadius: "999px",
-                            border: "1.5px solid #000",
-                            cursor: "pointer",
-                            backgroundColor: "var(--swiss-bg)",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            color: "var(--swiss-fg)",
-                            transition: "all 0.15s ease"
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.borderColor = "var(--swiss-accent)";
-                            e.currentTarget.style.color = "var(--swiss-accent)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.borderColor = "#000";
-                            e.currentTarget.style.color = "var(--swiss-fg)";
                           }}
                         >
                           {action.icon} {action.label}
@@ -286,9 +253,10 @@ export default function CoachView({
         <form
           onSubmit={handleSubmit}
           style={{
-            border: "2px solid #000",
+            border: "0.5px solid var(--color-border)",
             borderRadius: "24px",
-            backgroundColor: "var(--swiss-bg)",
+            backgroundColor: "var(--color-surface)",
+            boxShadow: "var(--shadow-card)",
             padding: "8px",
             display: "flex",
             flexDirection: "row",
@@ -312,37 +280,25 @@ export default function CoachView({
               flex: 1,
               padding: "12px 14px",
               borderRadius: "20px",
-              border: "1.5px solid var(--swiss-border)",
-              backgroundColor: "#fff",
+              border: "0.5px solid var(--color-border)",
+              backgroundColor: "var(--color-bg)",
               fontSize: "15px",
-              fontFamily: "inherit",
+              fontFamily: "var(--font-base)",
               resize: "none",
               minWidth: 0,
               minHeight: "48px",
               maxHeight: "120px",
-              boxSizing: "border-box"
+              boxSizing: "border-box",
+              outline: "none",
+              color: "var(--color-dark)"
             }}
           />
           <button
             type="submit"
             disabled={!input.trim() || loading}
-            className="swiss-landing-cta"
-            style={{
-              padding: "12px 20px",
-              borderRadius: "999px",
-              fontSize: "12px",
-              fontWeight: 900,
-              textTransform: "uppercase",
-              opacity: !input.trim() || loading ? 0.5 : 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "8px",
-              flexShrink: 0,
-              minHeight: "48px"
-            }}
+            className="coach-send-btn"
           >
-            {loading ? "Pensando..." : "Enviar"} <Send size={14} />
+            <Send size={18} />
           </button>
         </form>
       </div>

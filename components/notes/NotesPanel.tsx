@@ -1,5 +1,5 @@
 import React from "react";
-import { StickyNote, MessageSquareText, Calendar, HelpCircle, FileText, BookOpen } from "lucide-react";
+import { MessageSquareText, Calendar, HelpCircle, FileText, BookOpen } from "lucide-react";
 import { QUICK_ACTION_PROMPTS } from "@/lib/prompts";
 
 interface NotesPanelProps {
@@ -16,89 +16,64 @@ export default function NotesPanel({ sendToSection }: NotesPanelProps) {
   ];
 
   return (
-    <div style={{ padding: "40px 24px", maxWidth: "900px", margin: "0 auto" }}>
-      <header className="content-header" style={{ marginBottom: "40px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
-          <div style={{ backgroundColor: "var(--swiss-accent)", color: "#fff", padding: "12px", borderRadius: "16px" }}>
-            <StickyNote size={24} />
-          </div>
-          <h2 className="flux-title" style={{ fontSize: "32px", textTransform: "uppercase", fontWeight: 900, margin: 0, letterSpacing: "-0.02em" }}>
-            Notas
-          </h2>
-        </div>
-        <p className="flux-subtitle" style={{ fontSize: "18px", color: "var(--swiss-fg)", fontWeight: 500 }}>
+    <div style={{ padding: "24px 20px 100px", maxWidth: "900px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "20px" }}>
+      <header>
+        <h2 style={{ fontSize: "19px", fontWeight: 700, margin: "0 0 4px", fontFamily: "var(--font-base)", color: "var(--color-dark)" }}>
+          Notas
+        </h2>
+        <p style={{ fontSize: "14px", color: "var(--color-muted)", margin: 0, fontFamily: "var(--font-base)" }}>
           Ideas breves para convertir la lectura en práctica.
         </p>
       </header>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
         {notes.map((note, idx) => (
-          <div 
+          <div
             key={idx}
-            style={{ 
-              backgroundColor: "var(--swiss-bg)", 
-              border: "2px solid #000", 
-              borderRadius: "22px", 
-              padding: "32px",
+            style={{
+              background: "var(--color-surface)",
+              border: "0.5px solid var(--color-border)",
+              borderRadius: "var(--radius-lg)",
+              padding: "20px",
               display: "flex",
               flexDirection: "column",
-              gap: "16px",
-              transition: "transform 0.15s ease",
-              cursor: "default"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "var(--swiss-accent)";
-              e.currentTarget.style.transform = "translateY(-2px)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "#000";
-              e.currentTarget.style.transform = "translateY(0)";
+              gap: "14px",
+              boxShadow: "var(--shadow-card)"
             }}
           >
             <div>
-              <h3 style={{ fontSize: "20px", fontWeight: 900, marginBottom: "8px", textTransform: "uppercase" }}>{note.title}</h3>
-              <p style={{ fontSize: "14px", fontWeight: 500, color: "var(--swiss-fg)", lineHeight: "1.5" }}>{note.excerpt}</p>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px", color: "var(--color-dark)", fontFamily: "var(--font-base)" }}>
+                {note.title}
+              </h3>
+              <p style={{ fontSize: "14px", fontWeight: 400, color: "var(--color-muted)", lineHeight: "1.5", fontFamily: "var(--font-base)", margin: 0 }}>
+                {note.excerpt}
+              </p>
             </div>
 
-            <div style={{ marginTop: "16px", paddingTop: "16px", borderTop: "2px solid var(--swiss-border)", display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
-              <span style={{ fontSize: "11px", fontWeight: 900, textTransform: "uppercase", color: "var(--swiss-text-muted)", marginRight: "4px" }}>
+            <div style={{ paddingTop: "12px", borderTop: "0.5px solid var(--color-border)", display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+              <span style={{ fontSize: "11px", fontWeight: 500, color: "var(--color-muted)", fontFamily: "var(--font-base)", marginRight: "2px" }}>
                 Convertir en:
               </span>
-              <button 
-                onClick={() => sendToSection("aula", { source: "Notas", title: note.title, action: "coach", content: `Quiero trabajar sobre esta nota: "${note.title}". ${note.excerpt}` })}
-                className="flux-btn-secondary" 
-                style={{ fontSize: "11px", padding: "6px 12px", borderRadius: "999px", display: "flex", alignItems: "center", gap: "6px", backgroundColor: "var(--swiss-bg)", border: "1.5px solid #000" }}
-              >
-                <MessageSquareText size={14} /> Coach
-              </button>
-              <button 
-                onClick={() => sendToSection("planes", { source: "Notas", title: note.title, action: "planes", content: `${QUICK_ACTION_PROMPTS.plan}\n\nNota: "${note.title}". ${note.excerpt}` })}
-                className="flux-btn-secondary" 
-                style={{ fontSize: "11px", padding: "6px 12px", borderRadius: "999px", display: "flex", alignItems: "center", gap: "6px", backgroundColor: "var(--swiss-bg)", border: "1.5px solid #000" }}
-              >
-                <Calendar size={14} /> Plan
-              </button>
-              <button 
-                onClick={() => sendToSection("examenes", { source: "Notas", title: note.title, action: "examenes", content: `${QUICK_ACTION_PROMPTS.questions}\n\nNota: "${note.title}". ${note.excerpt}` })}
-                className="flux-btn-secondary" 
-                style={{ fontSize: "11px", padding: "6px 12px", borderRadius: "999px", display: "flex", alignItems: "center", gap: "6px", backgroundColor: "var(--swiss-bg)", border: "1.5px solid #000" }}
-              >
-                <HelpCircle size={14} /> Preguntas
-              </button>
-              <button 
-                onClick={() => sendToSection("diario", { source: "Notas", title: note.title, action: "diario", content: `${QUICK_ACTION_PROMPTS.journal}\n\nNota: "${note.title}". ${note.excerpt}` })}
-                className="flux-btn-secondary" 
-                style={{ fontSize: "11px", padding: "6px 12px", borderRadius: "999px", display: "flex", alignItems: "center", gap: "6px", backgroundColor: "var(--swiss-bg)", border: "1.5px solid #000" }}
-              >
-                <FileText size={14} /> Diario
-              </button>
-              <button 
-                onClick={() => sendToSection("libro", { source: "Notas", title: note.title, action: "libro", content: `${QUICK_ACTION_PROMPTS.book}\n\nNota: "${note.title}". ${note.excerpt}` })}
-                className="flux-btn-secondary" 
-                style={{ fontSize: "11px", padding: "6px 12px", borderRadius: "999px", display: "flex", alignItems: "center", gap: "6px", backgroundColor: "var(--swiss-bg)", border: "1.5px solid #000" }}
-              >
-                <BookOpen size={14} /> Mi libro
-              </button>
+              {[
+                { tab: "aula", action: "coach", icon: <MessageSquareText size={13} />, label: "Coach",
+                  content: `Quiero trabajar sobre esta nota: "${note.title}". ${note.excerpt}` },
+                { tab: "planes", action: "planes", icon: <Calendar size={13} />, label: "Plan",
+                  content: `${QUICK_ACTION_PROMPTS.plan}\n\nNota: "${note.title}". ${note.excerpt}` },
+                { tab: "examenes", action: "examenes", icon: <HelpCircle size={13} />, label: "Preguntas",
+                  content: `${QUICK_ACTION_PROMPTS.questions}\n\nNota: "${note.title}". ${note.excerpt}` },
+                { tab: "diario", action: "diario", icon: <FileText size={13} />, label: "Diario",
+                  content: `${QUICK_ACTION_PROMPTS.journal}\n\nNota: "${note.title}". ${note.excerpt}` },
+                { tab: "libro", action: "libro", icon: <BookOpen size={13} />, label: "Mi libro",
+                  content: `${QUICK_ACTION_PROMPTS.book}\n\nNota: "${note.title}". ${note.excerpt}` },
+              ].map(({ tab, action, icon, label, content }) => (
+                <button
+                  key={tab}
+                  onClick={() => sendToSection(tab, { source: "Notas", title: note.title, action, content })}
+                  className="coach-quick-btn"
+                >
+                  {icon} {label}
+                </button>
+              ))}
             </div>
           </div>
         ))}

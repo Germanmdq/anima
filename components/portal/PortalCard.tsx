@@ -9,77 +9,69 @@ interface PortalCardProps {
   onEnter: () => void;
 }
 
-export default function PortalCard({
-  num,
-  title,
-  excerpt,
-  desc,
-  icon,
-  onEnter
-}: PortalCardProps) {
+export default function PortalCard({ num, title, excerpt, desc, icon, onEnter }: PortalCardProps) {
   return (
     <div
       style={{
-        backgroundColor: "var(--swiss-bg)",
-        border: "2px solid #000",
-        borderRadius: "22px",
-        padding: "28px",
+        background: "var(--color-surface)",
+        border: "0.5px solid var(--color-border)",
+        borderRadius: "var(--radius-lg)",
+        padding: "24px",
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
-        minHeight: "240px",
+        minHeight: "220px",
         boxSizing: "border-box",
         position: "relative",
         cursor: "pointer",
-        transition: "transform 0.15s ease-out, border-color 0.15s ease-out"
+        boxShadow: "var(--shadow-card)",
+        transition: "box-shadow 0.15s, transform 0.15s"
       }}
       onClick={onEnter}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = "var(--swiss-accent)";
-        e.currentTarget.style.transform = "translateY(-3px)";
+        e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.10)";
+        e.currentTarget.style.transform = "translateY(-2px)";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "var(--swiss-border)";
+        e.currentTarget.style.boxShadow = "var(--shadow-card)";
         e.currentTarget.style.transform = "translateY(0)";
       }}
     >
-      {/* Top Section */}
       <div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
-          <span style={{ fontSize: "11px", fontWeight: 900, color: "var(--swiss-text-muted)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "14px" }}>
+          <span style={{ fontSize: "11px", fontWeight: 500, color: "var(--color-muted)", fontFamily: "var(--font-base)" }}>
             {num}
           </span>
-          {icon && <div style={{ color: "var(--swiss-accent)" }}>{icon}</div>}
+          {icon && <div style={{ color: "var(--color-accent)" }}>{icon}</div>}
         </div>
-        
-        <h3 style={{ fontSize: "20px", fontWeight: 900, textTransform: "uppercase", marginBottom: "8px", color: "var(--swiss-fg)", letterSpacing: "-0.01em" }}>
+
+        <h3 style={{ fontSize: "17px", fontWeight: 600, marginBottom: "8px", color: "var(--color-dark)", fontFamily: "var(--font-base)" }}>
           {title}
         </h3>
-        
-        <p style={{ fontSize: "13px", fontWeight: 700, lineHeight: "1.4", marginBottom: "6px", color: "var(--swiss-fg)" }}>
+
+        <p style={{ fontSize: "13px", fontWeight: 500, lineHeight: "1.45", marginBottom: "4px", color: "var(--color-dark)", fontFamily: "var(--font-base)" }}>
           {excerpt}
         </p>
-        
-        <p style={{ fontSize: "11.5px", fontWeight: 500, lineHeight: "1.4", color: "var(--swiss-text-muted)" }}>
+
+        <p style={{ fontSize: "12px", fontWeight: 400, lineHeight: "1.4", color: "var(--color-muted)", fontFamily: "var(--font-base)" }}>
           {desc}
         </p>
       </div>
 
-      {/* Button Section */}
-      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "14px" }}>
         <button
-          className="swiss-landing-cta"
           style={{
-            padding: "8px 20px",
-            fontSize: "11px",
-            borderRadius: "22px",
-            textTransform: "uppercase",
-            fontWeight: 900
+            padding: "8px 18px",
+            fontSize: "13px",
+            fontWeight: 600,
+            borderRadius: "100px",
+            background: "var(--color-dark)",
+            color: "#fff",
+            border: "none",
+            cursor: "pointer",
+            fontFamily: "var(--font-base)"
           }}
-          onClick={(e) => {
-            e.stopPropagation();
-            onEnter();
-          }}
+          onClick={(e) => { e.stopPropagation(); onEnter(); }}
         >
           Entrar
         </button>

@@ -184,15 +184,12 @@ export default function NarratorView({ sendToSection, pendingContext, clearPendi
       }}
     >
       <header style={{ marginBottom: "10px", flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
-          <div style={{ backgroundColor: "var(--swiss-accent)", color: "#fff", padding: "9px", borderRadius: "14px" }}>
-            <Sparkles size={20} />
-          </div>
-          <h2 style={{ fontSize: "28px", textTransform: "uppercase", fontWeight: 900, margin: 0, letterSpacing: 0 }}>
+        <div style={{ marginBottom: "4px" }}>
+          <h2 style={{ fontSize: "19px", fontWeight: 700, margin: 0, fontFamily: "var(--font-base)", color: "var(--color-dark)" }}>
             Narrador
           </h2>
         </div>
-        <p style={{ fontSize: "16px", color: "var(--swiss-fg)", fontWeight: 800, margin: 0 }}>
+        <p style={{ fontSize: "14px", color: "var(--color-muted)", fontWeight: 500, margin: 0, fontFamily: "var(--font-base)" }}>
           Explicaciones vivas, ejemplos y escenas guiadas.
         </p>
       </header>
@@ -355,9 +352,10 @@ export default function NarratorView({ sendToSection, pendingContext, clearPendi
             handleNarrar();
           }}
           style={{
-            border: "2px solid #000",
+            border: "0.5px solid var(--color-border)",
             borderRadius: "24px",
-            backgroundColor: "var(--swiss-bg)",
+            backgroundColor: "var(--color-surface)",
+            boxShadow: "var(--shadow-card)",
             padding: "8px",
             display: "flex",
             alignItems: "flex-end",
@@ -379,13 +377,15 @@ export default function NarratorView({ sendToSection, pendingContext, clearPendi
             maxHeight: "120px",
             padding: "12px 14px",
             borderRadius: "20px",
-            border: "1.5px solid var(--swiss-border)",
-            backgroundColor: "#fff",
+            border: "0.5px solid var(--color-border)",
+            background: "var(--color-bg)",
             fontSize: "15px",
-            fontFamily: "inherit",
+            fontFamily: "var(--font-base)",
             resize: "none",
             minWidth: 0,
-            boxSizing: "border-box"
+            boxSizing: "border-box",
+            outline: "none",
+            color: "var(--color-dark)"
           }}
           rows={1}
         />
@@ -394,21 +394,22 @@ export default function NarratorView({ sendToSection, pendingContext, clearPendi
             type="submit"
             disabled={!prompt.trim() || loading}
             style={{
-              padding: "12px 20px",
-              borderRadius: "999px",
-              fontSize: "12px",
-              fontWeight: 900,
-              textTransform: "uppercase",
-              opacity: !prompt.trim() || loading ? 0.5 : 1,
+              width: "42px",
+              height: "42px",
+              borderRadius: "50%",
+              background: "var(--color-accent)",
+              color: "#fff",
+              border: "none",
+              opacity: !prompt.trim() || loading ? 0.38 : 1,
               cursor: !prompt.trim() || loading ? "not-allowed" : "pointer",
-              minHeight: "48px",
               flexShrink: 0,
               display: "flex",
               alignItems: "center",
-              gap: "8px"
+              justifyContent: "center",
+              padding: 0
             }}
           >
-            {loading ? "Pensando..." : "Narrar"} <Send size={14} />
+            <Send size={18} />
           </button>
         </form>
 

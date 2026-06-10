@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { History, MessageSquareText, Calendar, BookOpen, Send, HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { History, MessageSquareText, Calendar, BookOpen, Send, HelpCircle, ChevronDown, ChevronUp, Layers } from "lucide-react";
 
 interface MemoryPanelProps {
   sendToSection: (target: string, context: any) => void;
@@ -43,6 +43,7 @@ export default function MemoryPanel({ sendToSection, pendingContext, clearPendin
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [usarEnId, setUsarEnId] = useState<string | null>(null);
 
   const parseContent = (content: any) => {
     if (!content) return {};
@@ -270,6 +271,35 @@ export default function MemoryPanel({ sendToSection, pendingContext, clearPendin
                             <HelpCircle size={11} /> Preguntas
                           </button>
                         </div>
+                        {/* Usar en… — solo mobile */}
+                        <div className="ods-mem-usaren">
+                          <button className="ods-mem-usaren-btn" onClick={() => setUsarEnId(item.id)}>
+                            <Layers size={13} /> Usar en…
+                          </button>
+                        </div>
+                        {/* Panel inferior "Usar en…" */}
+                        {usarEnId === item.id && (
+                          <div className="ods-bottomnav__submenu-overlay" onClick={() => setUsarEnId(null)}>
+                            <div className="ods-bottomnav__submenu" onClick={(e) => e.stopPropagation()}>
+                              <div className="ods-bottomnav__submenu-title">Usar en…</div>
+                              <button onClick={() => { sendMemoryAction("aula", item); setUsarEnId(null); }} className="ods-bottomnav__submenu-item">
+                                <MessageSquareText size={20} /> Enviar al Coach
+                              </button>
+                              <button onClick={() => { sendMemoryAction("planes", item); setUsarEnId(null); }} className="ods-bottomnav__submenu-item">
+                                <Calendar size={20} /> Crear plan
+                              </button>
+                              <button onClick={() => { sendMemoryAction("examenes", item); setUsarEnId(null); }} className="ods-bottomnav__submenu-item">
+                                <HelpCircle size={20} /> Crear preguntas
+                              </button>
+                              <button onClick={() => { sendMemoryAction("libro", item); setUsarEnId(null); }} className="ods-bottomnav__submenu-item">
+                                <BookOpen size={20} /> Agregar a mi libro
+                              </button>
+                              <button onClick={() => { sendMemoryAction("telegram", item); setUsarEnId(null); }} className="ods-bottomnav__submenu-item">
+                                <Send size={20} /> Mensaje Telegram
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}

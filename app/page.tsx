@@ -8,27 +8,36 @@ import {
   BookOpen,
   BookText,
   Bot,
+  CalendarDays,
   ChevronDown,
+  CircleUserRound,
   Cross,
+  Ellipsis,
   GraduationCap,
   History,
   HomeIcon,
   Library,
   Lightbulb,
   Map as MapIconLucide,
+  MessageCircle,
   MessageSquareText,
+  NotebookPen,
   NotebookTabs,
+  PenLine,
   Quote,
+  Save,
   ScrollText,
   SearchIcon,
   Sparkles,
+  Star,
+  StickyNote,
+  Sun,
   Trophy,
   UserCog,
   UserRound,
   HelpCircle,
   Send,
   FileText,
-  StickyNote,
   Calendar,
   LogOut,
   Edit3,
@@ -270,6 +279,7 @@ export default function Home() {
   const [currentTab, setCurrentTab] = useState<TabId>("panel");
   const [showApp, setShowApp] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [mobileNavGroup, setMobileNavGroup] = useState<string | null>(null);
 
   // Auth
   const [session, setSession] = useState<any>(null);
@@ -315,6 +325,7 @@ export default function Home() {
   const [selectedText, setSelectedText] = useState<TextoMetadatos | null>(null);
   const [textDetail, setTextDetail] = useState<string | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [openAlphaLetters, setOpenAlphaLetters] = useState<Set<string>>(new Set());
 
   // Exámenes (Preguntas y Respuestas)
   const [examStarted, setExamStarted] = useState(false);
@@ -343,6 +354,8 @@ export default function Home() {
   const [bookError, setBookError] = useState("");
   const [bookSavingMemory, setBookSavingMemory] = useState(false);
   const [bookSavedMessage, setBookSavedMessage] = useState("");
+  const [bookOpen, setBookOpen] = useState(false);
+  const [openChapters, setOpenChapters] = useState<Set<number>>(new Set());
 
   // Sesión persistente
   const [sessionId, setSessionId] = useState<string>("");
@@ -1318,6 +1331,8 @@ ${contenidoConsolidado}
     }
 
     const goToLogin = () => { setLoginMode("register"); setShowLoginModal(true); };
+    const scrollToBento = () => { document.getElementById("pub-herramientas")?.scrollIntoView({ behavior: "smooth" }); };
+    // legacy landingTools kept for reference — no longer rendered
     const landingTools = [
       { icon: <MessageSquareText size={22} />, title: "Coach", desc: "Trabajá tu deseo con una guía directa." },
       { icon: <Sparkles size={22} />, title: "Narrador", desc: "Recibí explicaciones vivas, ejemplos y escenas guiadas." },
@@ -1332,304 +1347,387 @@ ${contenidoConsolidado}
     ];
 
     return (
-      <div style={{ background: "var(--ods-paper)", overflowX: "hidden" }} suppressHydrationWarning>
+      <div style={{ background: "#fff", overflowX: "hidden" }} suppressHydrationWarning>
 
-        {/* ── NAV ── */}
-        <header className="ods-pub-nav">
-          <div className="ods-pub-nav__inner">
-            <a className="ods-logo" href="#">
-              <Image src="/odiseo/odiseo-badge.png" alt="Odiseo" width={36} height={36} className="ods-logo__mark" />
-              <span className="ods-logo__wordmark">
-                <span className="ods-logo__name">Odiseo</span>
-                <span className="ods-logo__tagline">Tu compañero de imaginación</span>
-              </span>
+        {/* ── 1. NAV ── */}
+        <header className="pub-nav">
+          <div className="pub-nav__inner">
+            <a className="pub-logo" href="#">
+              <div className="pub-logo__icon">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                  <circle cx="7" cy="7" r="5" stroke="#fff" strokeWidth="2"/>
+                  <circle cx="7" cy="7" r="2" fill="#fff"/>
+                </svg>
+              </div>
+              <div className="pub-logo__text">
+                <span className="pub-logo__name">Odiseo</span>
+                <span className="pub-logo__sub">Tu compañero de imaginación</span>
+              </div>
             </a>
-            <nav className="ods-pub-nav__links">
-              <a href="#que-es">Qué es</a>
-              <a href="#herramientas">Herramientas</a>
-              <a href="#como">Cómo funciona</a>
-              <a href="#precios">Precios</a>
-              <button onClick={() => { setLoginMode("login"); setShowLoginModal(true); }}>Ingresar</button>
-            </nav>
-            <div className="ods-pub-nav__cta">
-              <button className="ods-btn ods-btn--ghost ods-btn--sm" style={{ display: "none" } /* hidden on mobile */} onClick={() => { setLoginMode("login"); setShowLoginModal(true); }}>
+            <div className="pub-nav__cta">
+              <button className="pub-nav-btn pub-nav-btn--ghost" onClick={() => { setLoginMode("login"); setShowLoginModal(true); }}>
                 Ingresar
               </button>
-              <button className="ods-btn ods-btn--accent ods-btn--sm" onClick={goToLogin}>
+              <button className="pub-nav-btn pub-nav-btn--solid" onClick={goToLogin}>
                 Empezar gratis
               </button>
             </div>
           </div>
         </header>
 
-        {/* ── HERO ── */}
-        <section className="ods-pub-hero" id="que-es">
-          <div className="ods-pub-hero__grid">
-            <div>
-              <span className="ods-pub-kicker">Estudio · Práctica · Memoria</span>
-              <h1 className="ods-pub-hero__title" style={{ marginTop: 18 }}>Odiseo</h1>
-              <p className="ods-pub-hero__slogan">Tu <b>compañero</b> de imaginación</p>
-              <p className="ods-pub-hero__lead">
-                Un espacio para conversar, estudiar, practicar y recordar quién estás eligiendo ser.
-              </p>
-              <p className="ods-pub-hero__support">
-                Odiseo te ayuda a trabajar tu deseo, comprender las enseñanzas de Neville, guardar memoria de tu proceso y convertir tus conversaciones en planes, preguntas, escenas y libros propios.
-              </p>
-              <div className="ods-pub-ask">
-                <input
-                  type="text"
-                  placeholder="¿Qué querés trabajar hoy? Ej: vivir desde el final, sostener mi deseo…"
-                  onKeyDown={(e) => { if (e.key === "Enter") goToLogin(); }}
-                />
-                <button className="ods-btn ods-btn--dark ods-btn--sm" onClick={goToLogin}>
-                  Empezar →
+        {/* ── 2. HERO ── */}
+        <section className="pub-hero">
+          <div className="pub-hero__top">
+            <h1 className="pub-hero__h1">
+              <span className="pub-hero__h1-brand">Odiseo</span>
+              <span className="pub-hero__h1-tagline">donde la razón no existe.</span>
+            </h1>
+          </div>
+
+          {/* ── Desktop orbital — 1100×460, centro 550,230 ── */}
+          <div className="pub-orbital-wrap pub-orbital-wrap--desktop">
+            <svg viewBox="0 0 1100 460" className="pub-orbital-svg" preserveAspectRatio="none" aria-hidden="true">
+              <circle cx="550" cy="230" r="110" fill="none" stroke="white" strokeWidth="1" opacity="0.06"/>
+              <circle cx="550" cy="230" r="200" fill="none" stroke="white" strokeWidth="1" opacity="0.045"/>
+              <circle cx="550" cy="230" r="290" fill="none" stroke="white" strokeWidth="1" opacity="0.03"/>
+              {/* fp1 Coach */}
+              <circle r="6" fill="#E8401A" opacity="0.3"><animateMotion dur="2.8s" repeatCount="indefinite" begin="0s"    path="M 110 50  Q 330 140 550 230"/></circle>
+              <circle r="3.5" fill="#E8401A">              <animateMotion dur="2.8s" repeatCount="indefinite" begin="0s"    path="M 110 50  Q 330 140 550 230"/></circle>
+              {/* fp2 Narrador */}
+              <circle r="6" fill="#E8401A" opacity="0.3"><animateMotion dur="2.6s" repeatCount="indefinite" begin="0.3s"  path="M 50 230  L 550 230"/></circle>
+              <circle r="3.5" fill="#E8401A">              <animateMotion dur="2.6s" repeatCount="indefinite" begin="0.3s"  path="M 50 230  L 550 230"/></circle>
+              {/* fp3 Testimonios */}
+              <circle r="6" fill="#E8401A" opacity="0.3"><animateMotion dur="3.0s" repeatCount="indefinite" begin="0.7s"  path="M 110 410 Q 330 320 550 230"/></circle>
+              <circle r="3.5" fill="#E8401A">              <animateMotion dur="3.0s" repeatCount="indefinite" begin="0.7s"  path="M 110 410 Q 330 320 550 230"/></circle>
+              {/* fp4 Biblia */}
+              <circle r="6" fill="#E8401A" opacity="0.3"><animateMotion dur="2.7s" repeatCount="indefinite" begin="0.5s"  path="M 990 50  Q 770 140 550 230"/></circle>
+              <circle r="3.5" fill="#E8401A">              <animateMotion dur="2.7s" repeatCount="indefinite" begin="0.5s"  path="M 990 50  Q 770 140 550 230"/></circle>
+              {/* fp5 Memoria */}
+              <circle r="6" fill="#E8401A" opacity="0.3"><animateMotion dur="3.2s" repeatCount="indefinite" begin="1.0s"  path="M 1050 230 L 550 230"/></circle>
+              <circle r="3.5" fill="#E8401A">              <animateMotion dur="3.2s" repeatCount="indefinite" begin="1.0s"  path="M 1050 230 L 550 230"/></circle>
+              {/* fp6 Mi libro */}
+              <circle r="6" fill="#E8401A" opacity="0.3"><animateMotion dur="2.9s" repeatCount="indefinite" begin="1.4s"  path="M 990 410 Q 770 320 550 230"/></circle>
+              <circle r="3.5" fill="#E8401A">              <animateMotion dur="2.9s" repeatCount="indefinite" begin="1.4s"  path="M 990 410 Q 770 320 550 230"/></circle>
+            </svg>
+            <div className="pub-orbital-nodes">
+              <div className="pub-orbital-center-wrap">
+                <div className="pub-orbital-center">
+                  <svg width="44" height="44" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <circle cx="7" cy="7" r="5" stroke="#fff" strokeWidth="2"/>
+                    <circle cx="7" cy="7" r="2" fill="#fff"/>
+                  </svg>
+                </div>
+                <span className="pub-orbital-center-label">Odiseo</span>
+              </div>
+              <div className="pub-orbital-node" style={{ left: "80px", top: "20px" }}>
+                <div className="pub-orbital-node__circle"><MessageCircle size={24} stroke="#ff7a55" strokeWidth={1.7} fill="none"/></div>
+                <span className="pub-orbital-node__label">Coach</span>
+              </div>
+              <div className="pub-orbital-node" style={{ left: "20px", top: "200px" }}>
+                <div className="pub-orbital-node__circle"><BookOpen size={24} stroke="#ff7a55" strokeWidth={1.7}/></div>
+                <span className="pub-orbital-node__label">Narrador</span>
+              </div>
+              <div className="pub-orbital-node" style={{ left: "80px", top: "380px" }}>
+                <div className="pub-orbital-node__circle"><Star size={24} stroke="#ff7a55" strokeWidth={1.7}/></div>
+                <span className="pub-orbital-node__label">Testimonios</span>
+              </div>
+              <div className="pub-orbital-node" style={{ right: "80px", top: "20px" }}>
+                <div className="pub-orbital-node__circle"><Sun size={24} stroke="#ff7a55" strokeWidth={1.7}/></div>
+                <span className="pub-orbital-node__label">Biblia</span>
+              </div>
+              <div className="pub-orbital-node" style={{ right: "20px", top: "200px" }}>
+                <div className="pub-orbital-node__circle"><Save size={24} stroke="#ff7a55" strokeWidth={1.7}/></div>
+                <span className="pub-orbital-node__label">Memoria</span>
+              </div>
+              <div className="pub-orbital-node" style={{ right: "80px", top: "380px" }}>
+                <div className="pub-orbital-node__circle"><PenLine size={24} stroke="#ff7a55" strokeWidth={1.7}/></div>
+                <span className="pub-orbital-node__label">Mi libro</span>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Mobile orbital — 360×440, centro 180,220 ── */}
+          <div className="pub-orbital-wrap pub-orbital-wrap--mobile">
+            <svg viewBox="0 0 360 440" className="pub-orbital-svg" preserveAspectRatio="none" aria-hidden="true">
+              <circle cx="180" cy="220" r="95"  fill="none" stroke="white" strokeWidth="1" opacity="0.07"/>
+              <circle cx="180" cy="220" r="160" fill="none" stroke="white" strokeWidth="1" opacity="0.05"/>
+              {/* mp1 Coach */}
+              <circle r="5" fill="#E8401A" opacity="0.3"><animateMotion dur="2.8s" repeatCount="indefinite" begin="0s"    path="M 42 34  Q 115 130 180 220"/></circle>
+              <circle r="3" fill="#E8401A">              <animateMotion dur="2.8s" repeatCount="indefinite" begin="0s"    path="M 42 34  Q 115 130 180 220"/></circle>
+              {/* mp2 Narrador */}
+              <circle r="5" fill="#E8401A" opacity="0.3"><animateMotion dur="2.6s" repeatCount="indefinite" begin="0.3s"  path="M 16 220 L 180 220"/></circle>
+              <circle r="3" fill="#E8401A">              <animateMotion dur="2.6s" repeatCount="indefinite" begin="0.3s"  path="M 16 220 L 180 220"/></circle>
+              {/* mp3 Testimonios */}
+              <circle r="5" fill="#E8401A" opacity="0.3"><animateMotion dur="3.0s" repeatCount="indefinite" begin="0.7s"  path="M 42 406 Q 115 310 180 220"/></circle>
+              <circle r="3" fill="#E8401A">              <animateMotion dur="3.0s" repeatCount="indefinite" begin="0.7s"  path="M 42 406 Q 115 310 180 220"/></circle>
+              {/* mp4 Biblia */}
+              <circle r="5" fill="#E8401A" opacity="0.3"><animateMotion dur="2.7s" repeatCount="indefinite" begin="0.5s"  path="M 318 34  Q 245 130 180 220"/></circle>
+              <circle r="3" fill="#E8401A">              <animateMotion dur="2.7s" repeatCount="indefinite" begin="0.5s"  path="M 318 34  Q 245 130 180 220"/></circle>
+              {/* mp5 Memoria */}
+              <circle r="5" fill="#E8401A" opacity="0.3"><animateMotion dur="3.2s" repeatCount="indefinite" begin="1.0s"  path="M 344 220 L 180 220"/></circle>
+              <circle r="3" fill="#E8401A">              <animateMotion dur="3.2s" repeatCount="indefinite" begin="1.0s"  path="M 344 220 L 180 220"/></circle>
+              {/* mp6 Mi libro */}
+              <circle r="5" fill="#E8401A" opacity="0.3"><animateMotion dur="2.9s" repeatCount="indefinite" begin="1.4s"  path="M 318 406 Q 245 310 180 220"/></circle>
+              <circle r="3" fill="#E8401A">              <animateMotion dur="2.9s" repeatCount="indefinite" begin="1.4s"  path="M 318 406 Q 245 310 180 220"/></circle>
+            </svg>
+            <div className="pub-orbital-nodes">
+              <div className="pub-orbital-center-wrap pub-orbital-center-wrap--sm">
+                <div className="pub-orbital-center pub-orbital-center--sm">
+                  <svg width="34" height="34" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <circle cx="7" cy="7" r="5" stroke="#fff" strokeWidth="2"/>
+                    <circle cx="7" cy="7" r="2" fill="#fff"/>
+                  </svg>
+                </div>
+                <span className="pub-orbital-center-label pub-orbital-center-label--sm">Odiseo</span>
+              </div>
+              <div className="pub-orbital-node pub-orbital-node--sm" style={{ left: "28px", top: "5px" }}>
+                <div className="pub-orbital-node__circle"><MessageCircle size={21} stroke="#ff7a55" strokeWidth={1.7} fill="none"/></div>
+                <span className="pub-orbital-node__label">Coach</span>
+              </div>
+              <div className="pub-orbital-node pub-orbital-node--sm" style={{ left: "12px", top: "194px" }}>
+                <div className="pub-orbital-node__circle"><BookOpen size={21} stroke="#ff7a55" strokeWidth={1.7}/></div>
+                <span className="pub-orbital-node__label">Narrador</span>
+              </div>
+              <div className="pub-orbital-node pub-orbital-node--sm" style={{ left: "28px", bottom: "0px" }}>
+                <div className="pub-orbital-node__circle"><Star size={21} stroke="#ff7a55" strokeWidth={1.7}/></div>
+                <span className="pub-orbital-node__label">Testimonios</span>
+              </div>
+              <div className="pub-orbital-node pub-orbital-node--sm" style={{ right: "28px", top: "5px" }}>
+                <div className="pub-orbital-node__circle"><Sun size={21} stroke="#ff7a55" strokeWidth={1.7}/></div>
+                <span className="pub-orbital-node__label">Biblia</span>
+              </div>
+              <div className="pub-orbital-node pub-orbital-node--sm" style={{ right: "12px", top: "194px" }}>
+                <div className="pub-orbital-node__circle"><Save size={21} stroke="#ff7a55" strokeWidth={1.7}/></div>
+                <span className="pub-orbital-node__label">Memoria</span>
+              </div>
+              <div className="pub-orbital-node pub-orbital-node--sm" style={{ right: "28px", bottom: "0px" }}>
+                <div className="pub-orbital-node__circle"><PenLine size={21} stroke="#ff7a55" strokeWidth={1.7}/></div>
+                <span className="pub-orbital-node__label">Mi libro</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="pub-hero__bottom">
+            <div className="pub-hero__cta-row">
+              <button className="pub-hero-btn pub-hero-btn--solid" onClick={goToLogin}>Entrá gratis</button>
+              <button className="pub-hero-btn pub-hero-btn--ghost" onClick={scrollToBento}>Ver cómo funciona</button>
+            </div>
+            <p className="pub-hero__note">Sin tarjeta. Sin configuración.</p>
+          </div>
+        </section>
+
+        {/* ── 3. BENTO GRID ── */}
+        <section className="pub-bento" id="pub-herramientas">
+          <div className="pub-bento__inner">
+            <div className="pub-bento-header">
+              <span className="pub-bento-eyebrow">Herramientas</span>
+              <h2 className="pub-bento-h2">Todo lo que necesitás en un solo lugar</h2>
+              <p className="pub-bento-desc">Cada herramienta conectada con las demás. Con memoria.</p>
+            </div>
+
+            <div className="pub-bento-grid">
+
+              {/* Coach — span 2 — animated chat */}
+              <div className="pub-card pub-card--wide" id="pub-coach">
+                <div className="pub-card__body">
+                  <div className="pub-card__icon" style={{ background: "rgba(232,64,26,0.1)" }}>
+                    <MessageCircle size={22} stroke="#E8401A" strokeWidth={1.8} fill="none"/>
+                  </div>
+                  <h3 className="pub-card__h3">Coach</h3>
+                  <p className="pub-card__p">Trabajá tu deseo con una guía directa. Volvé al estado que elegís, paso a paso. El Coach recuerda tu deseo, tu escena y tu avance — cada conversación continúa donde dejaste la anterior.</p>
+                  <div className="pub-card__chips" style={{ marginTop: "auto" }}>
+                    <span className="pub-card__chip pub-card__chip--accent">Estado elegido</span>
+                    <span className="pub-card__chip pub-card__chip--accent">Deseo</span>
+                    <span className="pub-card__chip pub-card__chip--accent">Práctica</span>
+                  </div>
+                </div>
+                <div className="pub-chat-preview pub-chat-preview--anim">
+                  <div className="pub-chat-bubble pub-chat-bubble--gray pub-chat-msg--1">¿Qué escena confirmaría que tu deseo ya se cumplió?</div>
+                  <div className="pub-chat-bubble pub-chat-bubble--dark pub-chat-msg--2">Mi hermana abrazándome: ¡al final lo lograste!</div>
+                  <div className="pub-chat-typing"><span/><span/><span/></div>
+                  <div className="pub-chat-bubble pub-chat-bubble--gray pub-chat-msg--3">Perfecto. Esta noche dormí desde esa escena.</div>
+                </div>
+              </div>
+
+              {/* Narrador */}
+              <div className="pub-card" id="pub-estudio">
+                <div className="pub-card__icon" style={{ background: "#f2f2f7" }}>
+                  <BookOpen size={22} stroke="#1d1d1f" strokeWidth={1.8}/>
+                </div>
+                <h3 className="pub-card__h3">Narrador</h3>
+                <p className="pub-card__p">Explicaciones vivas, ejemplos y escenas guiadas para entender de verdad.</p>
+                <div className="pub-narr-box">
+                  <div className="pub-narr-label">
+                    <div className="pub-narr-dot"/>
+                    <span>NARRANDO ESCENA</span>
+                  </div>
+                  <div className="pub-narr-lines">
+                    <p className="pub-narr-line pub-narr-line--1">"Cerrá los ojos. Estás en la cocina de tu casa nueva…"</p>
+                    <p className="pub-narr-line pub-narr-line--2">"El olor a café recién hecho llena el aire…"</p>
+                    <p className="pub-narr-line pub-narr-line--3">"Y sentís, sin dudarlo: esto ya es mío."</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Biblia — dark background, animated chips */}
+              <div className="pub-card pub-card--dark">
+                <div className="pub-card__icon" style={{ background: "rgba(255,255,255,0.12)" }}>
+                  <Sun size={22} stroke="#fff" strokeWidth={1.8}/>
+                </div>
+                <h3 className="pub-card__h3" style={{ color: "#fff" }}>Biblia metafísica</h3>
+                <p className="pub-card__p" style={{ color: "rgba(255,255,255,0.55)" }}>Entendé los símbolos bíblicos como estados de conciencia.</p>
+                <div className="pub-card__chips">
+                  <span className="pub-card__chip pub-biblia-chip pub-biblia-chip--1">Yo Soy</span>
+                  <span className="pub-card__chip pub-biblia-chip pub-biblia-chip--2">Moisés</span>
+                  <span className="pub-card__chip pub-biblia-chip pub-biblia-chip--3">Egipto</span>
+                </div>
+              </div>
+
+              {/* Testimonios — accent red, rotating quotes */}
+              <div className="pub-card pub-card--red">
+                <div className="pub-card__icon" style={{ background: "rgba(255,255,255,0.15)" }}>
+                  <Star size={22} stroke="#fff" strokeWidth={1.8}/>
+                </div>
+                <h3 className="pub-card__h3" style={{ color: "#fff" }}>Testimonios</h3>
+                <p className="pub-card__p" style={{ color: "rgba(255,255,255,0.8)" }}>Casos reales de personas que aplicaron la ley de imaginación.</p>
+                <div className="pub-quotes">
+                  <p className="pub-quote pub-quote--1">"Recuperé mi anillo después de 2 años."</p>
+                  <p className="pub-quote pub-quote--2">"El trabajo llegó en 3 semanas."</p>
+                  <p className="pub-quote pub-quote--3">"Volvimos a hablarnos con mi hijo."</p>
+                </div>
+              </div>
+
+              {/* Planes — animated day strip */}
+              <div className="pub-card">
+                <div className="pub-card__icon" style={{ background: "#f2f2f7" }}>
+                  <CalendarDays size={22} stroke="#1d1d1f" strokeWidth={1.8}/>
+                </div>
+                <h3 className="pub-card__h3">Planes guiados</h3>
+                <p className="pub-card__p">Prácticas de 7, 15 o 30 días para sostener tu deseo.</p>
+                <div className="pub-days-wrap">
+                  <span className="pub-days-label">Sostener el deseo — 7 días</span>
+                  <div className="pub-days-row">
+                    {([1,2,3,4,5,6,7] as const).map(n => (
+                      <div key={n} className="pub-day">
+                        <span className="pub-day__num">{n}</span>
+                        {n <= 4 && <div className={`pub-day__check pub-day__check--${n}`}>✓</div>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Memoria — span 2 — animated items */}
+              <div className="pub-card pub-card--wide" id="pub-memoria">
+                <div className="pub-card__body">
+                  <div className="pub-card__icon" style={{ background: "rgba(232,64,26,0.1)" }}>
+                    <Save size={22} stroke="#E8401A" strokeWidth={1.8}/>
+                  </div>
+                  <h3 className="pub-card__h3">Memoria</h3>
+                  <p className="pub-card__p">Guardá lo importante y retomá fácil. No empieces de cero cada vez.</p>
+                </div>
+                <div className="pub-memoria-list">
+                  <div className="pub-memoria-item pub-mem-anim--1">
+                    <span className="pub-memoria-dot" style={{ background: "#E8401A" }}/>
+                    <span className="pub-memoria-text">Visión del departamento en Palermo</span>
+                    <span className="pub-memoria-tag">deseo</span>
+                  </div>
+                  <div className="pub-memoria-item pub-mem-anim--2">
+                    <span className="pub-memoria-dot" style={{ background: "#1d1d1f" }}/>
+                    <span className="pub-memoria-text">Escena del ascensor — 14 jun</span>
+                    <span className="pub-memoria-tag">escena</span>
+                  </div>
+                  <div className="pub-memoria-item pub-mem-anim--3">
+                    <span className="pub-memoria-dot" style={{ background: "#8e8e93" }}/>
+                    <span className="pub-memoria-text">At Your Command — conferencia</span>
+                    <span className="pub-memoria-tag">estudio</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Telegram — animated notification */}
+              <div className="pub-card pub-card--telegram">
+                <div className="pub-card__icon" style={{ background: "rgba(232,64,26,0.1)" }}>
+                  <Send size={22} stroke="#E8401A" strokeWidth={1.8}/>
+                </div>
+                <h3 className="pub-card__h3">Telegram</h3>
+                <p className="pub-card__p">Afirmaciones en el momento justo.</p>
+                <div className="pub-notif">
+                  <div className="pub-notif__header">
+                    <div className="pub-notif__dot"/>
+                    <span className="pub-notif__title">ODISEO · TELEGRAM</span>
+                    <span className="pub-notif__time">ahora</span>
+                  </div>
+                  <div className="pub-notif__msg">Recordá: ya sos quien deseás ser. Viví desde ahí. ✦</div>
+                </div>
+              </div>
+
+              {/* Todo conectado — span 2 — mini orbit */}
+              <div className="pub-card pub-card--wide" id="pub-todo-conectado">
+                <div className="pub-card__body">
+                  <div className="pub-card__icon" style={{ background: "rgba(232,64,26,0.08)" }}>
+                    <MessageCircle size={22} stroke="#E8401A" strokeWidth={1.8} fill="none"/>
+                  </div>
+                  <h3 className="pub-card__h3">Todo conectado</h3>
+                  <p className="pub-card__p">Cada herramienta alimenta tu memoria.</p>
+                </div>
+                <div className="pub-mini-orbit-wrap">
+                  <svg viewBox="0 0 200 180" className="pub-mini-orbit-svg" aria-hidden="true">
+                    <circle cx="100" cy="90" r="55" fill="none" stroke="rgba(232,64,26,0.12)" strokeWidth="1.5"/>
+                    <circle r="2.5" fill="#E8401A"><animateMotion dur="1.9s" repeatCount="indefinite" begin="0s"    path="M 54 44 L 100 90"/></circle>
+                    <circle r="2.5" fill="#E8401A"><animateMotion dur="2.1s" repeatCount="indefinite" begin="0.5s"  path="M 146 44 L 100 90"/></circle>
+                    <circle r="2.5" fill="#E8401A"><animateMotion dur="2.3s" repeatCount="indefinite" begin="1.0s"  path="M 54 136 L 100 90"/></circle>
+                    <circle r="2.5" fill="#E8401A"><animateMotion dur="2.0s" repeatCount="indefinite" begin="0.35s" path="M 146 136 L 100 90"/></circle>
+                  </svg>
+                  <div className="pub-mini-orbit-nodes">
+                    <div className="pub-mini-orbit-center">
+                      <svg width="20" height="20" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                        <circle cx="7" cy="7" r="5" stroke="#fff" strokeWidth="2"/>
+                        <circle cx="7" cy="7" r="2" fill="#fff"/>
+                      </svg>
+                    </div>
+                    <div className="pub-mini-orbit-node" style={{ left: "27%", top: "24.4%" }}><MessageCircle size={15} stroke="#E8401A" strokeWidth={1.7} fill="none"/></div>
+                    <div className="pub-mini-orbit-node" style={{ left: "73%", top: "24.4%" }}><BookOpen size={15} stroke="#E8401A" strokeWidth={1.7}/></div>
+                    <div className="pub-mini-orbit-node" style={{ left: "27%", top: "75.6%" }}><Star size={15} stroke="#E8401A" strokeWidth={1.7}/></div>
+                    <div className="pub-mini-orbit-node" style={{ left: "73%", top: "75.6%" }}><PenLine size={15} stroke="#E8401A" strokeWidth={1.7}/></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mi libro */}
+              <div className="pub-card">
+                <div className="pub-card__icon" style={{ background: "#f2f2f7" }}>
+                  <PenLine size={22} stroke="#1d1d1f" strokeWidth={1.8}/>
+                </div>
+                <h3 className="pub-card__h3">Mi libro</h3>
+                <p className="pub-card__p">Convertí tus ideas y aprendizajes en capítulos de un libro propio.</p>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        {/* ── 4. CTA FINAL ── */}
+        <section className="pub-cta-section">
+          <div className="pub-cta-inner">
+            <div className="pub-cta-box">
+              <div>
+                <h2 className="pub-cta-h2">Empezá tu práctica hoy.</h2>
+                <p className="pub-cta-p">Gratis. Sin tarjeta. Sin complicaciones.</p>
+              </div>
+              <div className="pub-cta-side">
+                <button className="pub-btn pub-btn--white pub-btn--lg" onClick={goToLogin}>
+                  Entrá con Google →
                 </button>
+                <p className="pub-cta-sub">También podés registrarte con tu email</p>
               </div>
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 16, alignItems: "center" }}>
-                <a href="#como" className="ods-btn ods-btn--ghost ods-btn--sm">Ver cómo funciona</a>
-                <span style={{ fontSize: 13, color: "var(--ods-g-500)" }}>Gratis para empezar · sin tarjeta</span>
-              </div>
-            </div>
-            {/* Demo chat card */}
-            <div style={{ position: "relative" }}>
-              <div className="ods-pub-hero__demo">
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span className="ods-badge ods-badge--accent">EN VIVO</span>
-                  <span style={{ fontFamily: "var(--ods-mono)", fontSize: 11, color: "var(--ods-g-500)", letterSpacing: ".06em" }}>COACH</span>
-                </div>
-                <div style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 12 }}>
-                  <div style={{ alignSelf: "flex-end", background: "var(--ods-ink)", color: "#fff", padding: "12px 16px", borderRadius: "18px 18px 4px 18px", fontSize: 14.5, maxWidth: "85%" }}>
-                    Quiero casarme y siento que tarda.
-                  </div>
-                  <div style={{ alignSelf: "flex-start", background: "var(--ods-paper)", border: "1.5px solid var(--ods-g-300)", padding: "12px 16px", borderRadius: "18px 18px 18px 4px", fontSize: 14.5, maxWidth: "92%" }}>
-                    La tardanza no vive en el hecho, vive en la posición desde la que estás mirando. Ocupá el estado del deseo cumplido.
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 4 }}>
-                    {["Profundizar", "Crear plan", "Guardar en diario"].map((c) => (
-                      <span key={c} style={{ display: "inline-flex", alignItems: "center", fontWeight: 500, fontSize: 11.5, border: "1.5px solid var(--ods-ink)", borderRadius: 999, padding: "6px 11px", background: "var(--ods-paper)" }}>{c}</span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <Image
-                src="/odiseo/odiseo-mark.png"
-                alt=""
-                width={92}
-                height={92}
-                style={{ position: "absolute", right: -14, top: -30, filter: "drop-shadow(0 6px 14px rgba(0,0,0,.15))" }}
-              />
             </div>
           </div>
         </section>
 
-        {/* ── MARQUEE ── */}
-        <div className="ods-pub-marquee" aria-hidden="true">
-          <div className="ods-pub-marquee__track">
-            {(["Coach","Narrador","Testimonios","Biblia metafísica","Preguntas","Planes","Diario íntimo","Mi libro","Memoria","Fuentes de Neville"] as string[]).flatMap((item) => [item, item]).map((item, i) => (
-              <span key={i}>{item}</span>
-            ))}
-          </div>
-        </div>
-
-        {/* ── CÓMO FUNCIONA ── */}
-        <div className="ods-pub-shell">
-          <section className="ods-pub-sec" id="como" style={{ borderBottom: "none" }}>
-            <div className="ods-pub-sec__head">
-              <div>
-                <span className="ods-pub-kicker">01 — Cómo funciona</span>
-                <h2>Tres pasos para entrar en tu práctica</h2>
-              </div>
-              <p>Odiseo no solo responde. Recuerda, ordena, pregunta, narra y transforma tu proceso en práctica.</p>
-            </div>
-            <div className="ods-pub-steps">
-              {[
-                { n: "1", title: "Escribís lo que querés trabajar", desc: "Un deseo, una duda, una escena, una lectura o una situación interna." },
-                { n: "2", title: "Odiseo te acompaña", desc: "Recibí guía directa, explicación narrativa, preguntas, planes, testimonios o símbolos bíblicos relacionados." },
-                { n: "3", title: "Guardás tu proceso", desc: "Todo puede convertirse en memoria, diario, plan, mensaje o capítulo de tu propio libro." },
-              ].map((step) => (
-                <div key={step.n} className="ods-pub-step">
-                  <div className="ods-pub-step__n">{step.n}</div>
-                  <h3>{step.title}</h3>
-                  <p>{step.desc}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
-
-        {/* ── HERRAMIENTAS ── */}
-        <div style={{ background: "var(--ods-g-100)", borderTop: "2px solid var(--ods-ink)", borderBottom: "2px solid var(--ods-ink)" }}>
-          <div className="ods-pub-shell">
-            <section className="ods-pub-sec" id="herramientas" style={{ borderBottom: "none" }}>
-              <div className="ods-pub-sec__head">
-                <div>
-                  <span className="ods-pub-kicker">02 — Herramientas</span>
-                  <h2>Un sistema completo de imaginación</h2>
-                </div>
-                <p>Diez herramientas que trabajan juntas y comparten una misma memoria de tu proceso.</p>
-              </div>
-              <div className="ods-pub-tools">
-                {landingTools.map((t) => (
-                  <div key={t.title} className="ods-pub-tool" onClick={goToLogin}>
-                    <div className="ods-pub-tool__ico">{t.icon}</div>
-                    <h3>{t.title}</h3>
-                    <p>{t.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </div>
-        </div>
-
-        {/* ── UNIVERSIDAD ── */}
-        <section className="ods-pub-uni">
-          <div className="ods-pub-uni__inner">
-            <div>
-              <span className="ods-pub-kicker" style={{ color: "rgba(255,255,255,.5)" }}>Dentro de Odiseo</span>
-              <h2 style={{ marginTop: 16 }}>Universidad de la Imaginación</h2>
-              <p>Dentro de Odiseo vive la Universidad de la Imaginación: un espacio privado para estudiar, practicar, crear memoria, leer fuentes, responder preguntas y construir tu propio camino de imaginación.</p>
-              <button className="ods-btn ods-btn--accent ods-btn--lg" style={{ marginTop: 30 }} onClick={goToLogin}>
-                Entrar al espacio de estudio
-              </button>
-            </div>
-            <div className="ods-pub-uni__mark">
-              <Image src="/odiseo/odiseo-mark.png" alt="" width={360} height={360} style={{ width: "min(80%, 360px)", height: "auto" }} />
-            </div>
-          </div>
-        </section>
-
-        {/* ── AUTORES ── */}
-        <div className="ods-pub-shell">
-          <section className="ods-pub-sec" style={{ borderBottom: "none" }}>
-            <div className="ods-pub-sec__head">
-              <div>
-                <span className="ods-pub-kicker">03 — Autores</span>
-                <h2>Comenzamos con Neville</h2>
-              </div>
-              <p>Odiseo comienza con Neville Goddard. Próximamente se sumarán otros autores y líneas de estudio.</p>
-            </div>
-            <div className="ods-pub-authors">
-              <div className="ods-pub-author ods-pub-author--active">
-                <div className="ods-pub-author__ph">N</div>
-                <h3>Neville Goddard</h3>
-                <span className="ods-pub-author__status">● Autor activo</span>
-              </div>
-              {(["Joseph Murphy", "Emmet Fox", "Florence S. Shinn"] as string[]).map((name) => (
-                <div key={name} className="ods-pub-author ods-pub-author--soon">
-                  <div className="ods-pub-author__ph">{name[0]}</div>
-                  <h3>{name}</h3>
-                  <span className="ods-pub-author__status">Próximamente</span>
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
-
-        {/* ── PRECIOS ── */}
-        <div className="ods-pub-shell">
-          <section className="ods-pub-sec" id="precios" style={{ borderBottom: "none" }}>
-            <div className="ods-pub-sec__head">
-              <div>
-                <span className="ods-pub-kicker">04 — Precios</span>
-                <h2>Elegí cómo querés caminar</h2>
-              </div>
-              <p>Desde una primera consulta gratis hasta acceso de por vida. Sin vueltas.</p>
-            </div>
-            <div className="ods-pub-plans">
-              {([
-                { name: "Prueba inicial", price: "USD 0", desc: "Para entrar, probar Odiseo y hacer tu primera consulta.", items: ["Acceso al dashboard", "1 consulta inicial al Coach", "Vista limitada de herramientas", "Memoria básica visual", "Acceso preview a fuentes"], cta: "Empezar gratis", v: "ghost", feat: false },
-                { name: "Práctica 72 hs", price: "USD 5", desc: "Para probar Odiseo durante tres días con una práctica completa.", items: ["Coach limitado", "Narrador", "Diario íntimo", "1 plan corto · preguntas", "Memoria · preview Telegram"], cta: "Activar 72 horas", v: "dark", feat: false },
-                { name: "Camino Anual", price: "USD 30", unit: "/ año", badge: "Recomendado", desc: "Un año para estudiar, practicar y volver al estado elegido con continuidad.", items: ["Coach · Narrador · Preguntas", "Planes · Diario · Memoria", "Mi libro · Testimonios", "Biblia metafísica · Fuentes", "Universidad de la Imaginación"], cta: "Entrar al Camino Anual", v: "accent", feat: true },
-                { name: "Fundador", price: "USD 97", unit: "/ vida", desc: "Acceso de por vida para quienes quieren apoyar el nacimiento de Odiseo.", items: ["Acceso de por vida", "Límite superior de uso", "Mejoras principales futuras", "Prioridad en nuevas funciones", "Autores futuros incluidos"], cta: "Ser fundador", v: "dark", feat: false },
-              ] as { name: string; price: string; unit?: string; badge?: string; desc: string; items: string[]; cta: string; v: string; feat: boolean }[]).map((plan) => (
-                <div key={plan.name} className={`ods-pub-plan${plan.feat ? " ods-pub-plan--feat" : ""}`}>
-                  {plan.badge && <span className="ods-badge ods-badge--accent" style={{ alignSelf: "flex-start", marginBottom: 4 }}>{plan.badge}</span>}
-                  <div className="ods-pub-plan__name">{plan.name}</div>
-                  <div className="ods-pub-plan__price">
-                    {plan.price}
-                    {plan.unit && <small> {plan.unit}</small>}
-                  </div>
-                  <p className="ods-pub-plan__desc">{plan.desc}</p>
-                  <ul className="ods-pub-plan__list">
-                    {plan.items.map((item) => (
-                      <li key={item} className="ods-pub-plan__li">
-                        <span className="ods-pub-plan__check">✓</span>{item}
-                      </li>
-                    ))}
-                  </ul>
-                  <button className={`ods-btn ods-btn--block ods-btn--${plan.v}`} style={{ marginTop: "auto" }} onClick={goToLogin}>
-                    {plan.cta}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
-
-        {/* ── FAQ ── */}
-        <div style={{ background: "var(--ods-g-100)", borderTop: "2px solid var(--ods-ink)" }}>
-          <div className="ods-pub-shell">
-            <section className="ods-pub-sec" style={{ borderBottom: "none" }}>
-              <div className="ods-pub-sec__head">
-                <div>
-                  <span className="ods-pub-kicker">05 — Preguntas</span>
-                  <h2>Antes de empezar</h2>
-                </div>
-              </div>
-              <div className="ods-pub-faq">
-                {([
-                  { q: "¿Qué es Odiseo?", a: "Odiseo es tu compañero de imaginación: un espacio para conversar, estudiar, practicar, guardar memoria y convertir tu proceso en planes, preguntas, escenas y libros propios." },
-                  { q: "¿Está basado solo en Neville Goddard?", a: "Odiseo comienza con Neville Goddard como autor activo. Más adelante podrá sumar otros autores y líneas de estudio." },
-                  { q: "¿Qué significa vivir desde el final?", a: "Es practicar desde el estado del deseo cumplido, no como fantasía vacía, sino como una nueva posición interior desde la cual pensar, sentir y actuar." },
-                  { q: "¿Las fuentes están incluidas?", a: "Las conferencias, libros y fragmentos de Neville estarán disponibles dentro del dashboard según el plan del usuario." },
-                  { q: "¿Puedo crear mi propio libro?", a: "Sí. Odiseo puede ayudarte a ordenar conversaciones, notas, planes y escenas en un libro personal." },
-                  { q: "¿Telegram está activo?", a: "Telegram está pensado para mensajes personalizados durante el día. Puede aparecer como función incluida o próximamente según el estado del producto." },
-                ] as { q: string; a: string }[]).map((item, i) => (
-                  <details key={i} className="ods-pub-faq-item">
-                    <summary className="ods-pub-faq-q">
-                      {item.q}
-                      <span className="ods-pub-faq-q__pm">+</span>
-                    </summary>
-                    <div className="ods-pub-faq-a">{item.a}</div>
-                  </details>
-                ))}
-              </div>
-            </section>
-          </div>
-        </div>
-
-        {/* ── CTA BAND ── */}
-        <section className="ods-pub-ctaband">
-          <h2>Recordá quién estás eligiendo ser</h2>
-          <p>Tu primera consulta al Coach es gratis. Entrá y empezá tu práctica hoy.</p>
-          <button className="ods-btn ods-btn--lg ods-btn--white" onClick={goToLogin}>
-            Empezar gratis
-          </button>
-        </section>
-
-        {/* ── FOOTER ── */}
-        <footer className="ods-pub-foot">
-          <div className="ods-pub-foot__inner">
-            <div className="ods-pub-foot__top">
-              <a className="ods-logo" href="#">
-                <Image src="/odiseo/odiseo-badge.png" alt="Odiseo" width={36} height={36} className="ods-logo__mark" />
-                <span className="ods-logo__wordmark">
-                  <span className="ods-logo__name ods-logo__name--white">Odiseo</span>
-                  <span className="ods-logo__tagline" style={{ color: "#999" }}>Tu compañero de imaginación</span>
-                </span>
-              </a>
-              <div className="ods-pub-foot__links">
-                <a href="#">Términos</a>
-                <a href="#">Privacidad</a>
-                <a href="#">Contacto</a>
-                <button onClick={() => { setLoginMode("login"); setShowLoginModal(true); }}>Ingresar</button>
-              </div>
-            </div>
-            <div className="ods-pub-foot__bottom">
-              <span>© 2026 Odiseo. Basado inicialmente en las enseñanzas de Neville Goddard.</span>
-              <span style={{ fontFamily: "var(--ods-mono)" }}>odiseo.online</span>
-            </div>
-          </div>
+        {/* ── 5. FOOTER ── */}
+        <footer className="pub-footer">
+          <p>© 2025 Odiseo · odiseo.online · Tu compañero de imaginación</p>
         </footer>
 
       </div>
@@ -1747,44 +1845,6 @@ ${contenidoConsolidado}
 
           {/* Right: controls */}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {/* Author selector */}
-            <div className="odiseo-author-selector">
-              <button
-                type="button"
-                onClick={() => setAuthorMenuOpen((open) => !open)}
-                className="odiseo-author-btn"
-              >
-                <span style={{ fontFamily: "var(--ods-mono)", fontSize: 9.5, color: "var(--ods-g-500)", letterSpacing: ".1em", textTransform: "uppercase" }}>
-                  Autor
-                </span>
-                <span style={{ fontWeight: 700 }}>Neville Goddard</span>
-                <ChevronDown size={12} />
-              </button>
-              {authorMenuOpen && (
-                <div className="odiseo-author-menu">
-                  {[
-                    ["Neville Goddard", "activo"],
-                    ["Joseph Murphy", "próximamente"],
-                    ["Emmet Fox", "próximamente"],
-                    ["Florence Scovel Shinn", "próximamente"],
-                  ].map(([name, status]) => (
-                    <button
-                      key={name}
-                      type="button"
-                      disabled={status !== "activo"}
-                      onClick={() => setAuthorMenuOpen(false)}
-                      className={`odiseo-author-item${status === "activo" ? " odiseo-author-item--active" : ""}`}
-                    >
-                      <span style={{ fontWeight: status === "activo" ? 700 : 500 }}>{name}</span>
-                      <span style={{ fontSize: 11, color: status === "activo" ? "var(--ods-accent)" : "var(--ods-g-500)" }}>
-                        {status}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* Search */}
             <div className="odiseo-search">
               <SearchIcon size={15} aria-hidden="true" />
@@ -1792,7 +1852,7 @@ ${contenidoConsolidado}
             </div>
 
             {/* Query counter */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1.5px solid var(--ods-g-300)", borderRadius: 999, padding: "6px 13px" }}>
+            <div className="ods-counter-pill" style={{ display: "flex", alignItems: "center", gap: 8, border: "1.5px solid var(--ods-g-300)", borderRadius: 999, padding: "6px 13px" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <span style={{ fontFamily: "var(--ods-mono)", fontSize: 10, color: "var(--ods-g-500)", letterSpacing: ".06em" }}>
                   {questionsCount} / 200
@@ -1851,67 +1911,53 @@ ${contenidoConsolidado}
 
         {/* 1. DASHBOARD / PANEL PRINCIPAL */}
         {currentTab === "panel" && (
-          <div style={{ maxWidth: 1180, width: "100%" }}>
-            {/* Tool head */}
-            <div className="ods-tool-head">
-              <h1>Mi espacio en {BRAND_NAME}</h1>
-              <p className="ods-tool-head__sub">Elegí cómo querés trabajar tu imaginación hoy.</p>
-            </div>
+          <div className="dash-wrap">
 
-            {/* Active plan strip */}
-            <div className="ods-plan-strip">
-              <div className="ods-plan-strip__inner">
-                <span className="ods-plan-strip__dot" />
-                <div>
-                  <div className="ods-plan-strip__title">Sostener el deseo — Día 3 de 7</div>
-                  <div className="ods-plan-strip__sub">Plan activo · intensidad media</div>
-                </div>
+            {/* Greeting + plan badge */}
+            <div className="dash-header">
+              <div>
+                <h2 className="dash-greeting">
+                  Buen día{displayName && displayName !== "Usuario" ? `, ${displayName.split(" ")[0]}` : ""}.
+                </h2>
+                <p className="dash-greeting-sub">¿Qué querés trabajar hoy?</p>
               </div>
-              <button className="ods-plan-btn" onClick={() => setCurrentTab("planes")}>
-                Continuar plan →
+              <button className="plan-badge" onClick={() => setCurrentTab("planes")}>
+                <span className="plan-badge-dot" />
+                Sostener el deseo · Día 3 de 7
+                <span className="plan-badge-arrow">→</span>
               </button>
             </div>
 
-            {/* Tools grid */}
-            <div className="ods-tool-grid">
-              {(
-                [
-                  { tab: "aula", icon: <MessageSquareText size={20} />, title: "Coach", desc: "Trabajá tu deseo con una guía directa.", featured: true },
-                  { tab: "narrador", icon: <Sparkles size={20} />, title: "Narrador", desc: "Recibí explicaciones vivas, ejemplos y escenas guiadas." },
-                  { tab: "testimonios", icon: <ScrollText size={20} />, title: "Testimonios y casos", desc: "Encontrá historias reales relacionadas con lo que querés vivir." },
-                  { tab: "biblico", icon: <Cross size={20} />, title: "Biblia metafísica", desc: "Comprendé símbolos bíblicos como estados de conciencia." },
-                  { tab: "examenes", icon: <HelpCircle size={20} />, title: "Preguntas y respuestas", desc: "Integrá conceptos con preguntas configurables." },
-                  { tab: "biblioteca", icon: <Library size={20} />, title: "Fuentes / Conferencias", desc: "Explorá el material base de Neville." },
-                  { tab: "libro", icon: <BookOpen size={20} />, title: "Mi libro", desc: "Convertí tu proceso en un libro propio." },
-                  { tab: "planes", icon: <Calendar size={20} />, title: "Planes", desc: "Creá prácticas de 7, 15 o 30 días." },
-                  { tab: "telegram", icon: <Send size={20} />, title: "Telegram", desc: "Mensajes personalizados para volver al estado." },
-                  { tab: "diario", icon: <FileText size={20} />, title: "Diario íntimo", desc: "Registrá estados, avances y observaciones." },
-                  { tab: "notas", icon: <StickyNote size={20} />, title: "Notas", desc: "Ideas breves para estudiar y practicar." },
-                ] as { tab: TabId; icon: React.ReactNode; title: string; desc: string; featured?: boolean }[]
-              ).map((tool) => (
+            {/* Tool grid */}
+            <div className="dash-section-label">Herramientas</div>
+            <div className="dash-tool-grid">
+              {([
+                { tab: "aula",        icon: <MessageCircle size={22} strokeWidth={1.8} stroke="#E8401A"/>, title: "Coach",                  desc: "Trabajá tu deseo con guía directa." },
+                { tab: "narrador",    icon: <BookOpen      size={22} strokeWidth={1.8} stroke="#E8401A"/>, title: "Narrador",               desc: "Escenas guiadas y explicaciones vivas." },
+                { tab: "testimonios", icon: <Star          size={22} strokeWidth={1.8} stroke="#E8401A"/>, title: "Testimonios",            desc: "Historias reales relacionadas con tu deseo." },
+                { tab: "biblico",     icon: <Sun           size={22} strokeWidth={1.8} stroke="#E8401A"/>, title: "Biblia metafísica",      desc: "Símbolos bíblicos como estados de conciencia." },
+                { tab: "examenes",    icon: <HelpCircle    size={22} strokeWidth={1.8} stroke="#E8401A"/>, title: "Preguntas",              desc: "Integrá conceptos con preguntas." },
+                { tab: "biblioteca",  icon: <Library       size={22} strokeWidth={1.8} stroke="#E8401A"/>, title: "Fuentes",                desc: "Conferencias y libros de Neville." },
+                { tab: "libro",       icon: <PenLine       size={22} strokeWidth={1.8} stroke="#E8401A"/>, title: "Mi libro",               desc: "Convertí tu proceso en capítulos propios." },
+                { tab: "planes",      icon: <CalendarDays  size={22} strokeWidth={1.8} stroke="#E8401A"/>, title: "Planes",                 desc: "Prácticas de 7, 15 o 30 días." },
+                { tab: "telegram",    icon: <Send          size={22} strokeWidth={1.8} stroke="#E8401A"/>, title: "Telegram",               desc: "Mensajes para volver al estado elegido." },
+              ] as { tab: TabId; icon: React.ReactNode; title: string; desc: string }[]).map(({ tab, icon, title, desc }) => (
                 <div
-                  key={tool.tab}
-                  className={`ods-tcard${tool.featured ? " ods-tcard--featured" : ""}`}
+                  key={tab}
+                  className="dash-tool-card"
                   onClick={() => {
-                    setCurrentTab(tool.tab);
-                    if (tool.tab === "aula") { setAgent("profesor"); setChatMode("conversar"); }
+                    setCurrentTab(tab);
+                    if (tab === "aula") { setAgent("profesor"); setChatMode("conversar"); }
                   }}
                 >
-                  <div className="ods-tcard__ico">{tool.icon}</div>
-                  <h3 className="ods-tcard__title">{tool.title}</h3>
-                  <p className="ods-tcard__desc">{tool.desc}</p>
+                  <div className="dash-tool-icon-wrap">{icon}</div>
+                  <h4 className="dash-tool-h4">{title}</h4>
+                  <p className="dash-tool-p">{desc}</p>
+                  <span className="dash-tool-go">Abrir →</span>
                 </div>
               ))}
-
-              {/* Memoria — dark tile */}
-              <div className="ods-tcard ods-tcard--dark" onClick={() => setCurrentTab("memoria")}>
-                <div className="ods-tcard__ico"><History size={20} /></div>
-                <h3 className="ods-tcard__title" style={{ color: "#fff" }}>Memoria</h3>
-                <p className="ods-tcard__desc" style={{ color: "rgba(255,255,255,.65)" }}>
-                  Todo lo que Odiseo recuerda de tu proceso.
-                </p>
-              </div>
             </div>
+
           </div>
         )}
 
@@ -1966,131 +2012,69 @@ ${contenidoConsolidado}
 
         {/* 3. BIBLIOTECA DE TEXTOS */}
         {currentTab === "biblioteca" && (
-          <div className="flex-1 flex flex-col">
-            <header className="content-header" style={{ marginBottom: "16px" }}>
-              <h2 className="flux-title" style={{ fontSize: "20px" }}>Fuentes de Neville</h2>
-              <p className="flux-subtitle">Conferencias, libros y fragmentos que alimentan las respuestas, prácticas y búsquedas dentro de {BRAND_NAME}.</p>
+          <div className="alpha-wrap">
+            <header style={{ marginBottom: "20px" }}>
+              <h2 style={{ fontSize: "22px", fontWeight: 700, margin: "0 0 4px", fontFamily: "var(--font-base)", color: "var(--color-dark)" }}>Fuentes de Neville</h2>
+              <p style={{ fontSize: "14px", color: "var(--color-muted)", margin: 0, fontFamily: "var(--font-base)" }}>Conferencias y libros que alimentan las respuestas y prácticas de {BRAND_NAME}.</p>
             </header>
 
             {!hasFounderAccess && (
-              <div style={{ backgroundColor: "var(--swiss-bg)", border: "2px solid #000", borderRadius: "18px", padding: "18px 20px", marginBottom: "16px", display: "flex", justifyContent: "space-between", gap: "16px", alignItems: "center", flexWrap: "wrap" }}>
-                <div>
-                  <h3 style={{ fontSize: "15px", fontWeight: 900, textTransform: "uppercase", marginBottom: "4px" }}>Fuentes de Neville</h3>
-                  <p style={{ fontSize: "13px", color: "var(--swiss-text-muted)", margin: 0 }}>Las conferencias completas forman parte de la suscripción de {BRAND_NAME}.</p>
-                </div>
-                <button className="swiss-landing-cta" style={{ borderRadius: "999px", padding: "10px 18px", fontSize: "12px", fontWeight: 900 }}>
-                  Activar acceso
-                </button>
+              <div style={{ background: "var(--color-surface)", border: "0.5px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: "16px 20px", marginBottom: "20px", display: "flex", justifyContent: "space-between", gap: "16px", alignItems: "center", flexWrap: "wrap", boxShadow: "var(--shadow-card)" }}>
+                <p style={{ fontSize: "13px", color: "var(--color-muted)", margin: 0, fontFamily: "var(--font-base)" }}>Las conferencias completas forman parte de la suscripción de {BRAND_NAME}.</p>
+                <button className="swiss-landing-cta" style={{ borderRadius: "999px", padding: "9px 16px", fontSize: "12px", fontWeight: 700, flexShrink: 0 }}>Activar acceso</button>
               </div>
             )}
 
-            {/* Buscador de lecciones */}
-            <div className="library-search" style={{ marginBottom: "16px" }}>
-              <svg className="w-4 h-4 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              <input
-                type="text"
-                placeholder="Buscar por título de conferencia o título original..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              {search && (
-                <button onClick={() => setSearch("")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)" }}>
-                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-              )}
-            </div>
-
-            {/* Filtro por etiquetas */}
-            {allTags.length > 0 && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "16px" }}>
-                {selectedTags.length > 0 && (
-                  <button
-                    onClick={() => setSelectedTags([])}
-                    className="flux-class-badge"
-                    style={{ background: "var(--swiss-accent)", color: "white", border: "none", cursor: "pointer", fontSize: "10px" }}
-                  >
-                    Limpiar filtros
-                  </button>
-                )}
-                {allTags.map((tag) => {
-                  const active = selectedTags.includes(tag);
-                  return (
-                    <button
-                      key={tag}
-                      onClick={() =>
-                        setSelectedTags((prev) =>
-                          prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-                        )
-                      }
-                      className="flux-class-badge"
-                      style={{
-                        background: active ? "var(--swiss-accent)" : "var(--swiss-muted)",
-                        color: active ? "white" : "inherit",
-                        border: "none",
-                        cursor: "pointer",
-                        fontSize: "10px",
-                      }}
-                    >
-                      {tag}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Grid de archivos .md */}
             {loadingLib ? (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyItems: "center", justifyContent: "center", flex: 1, padding: "40px" }}>
-                <CargandoCerebro label="Cargando biblioteca..." />
+              <div style={{ display: "flex", justifyContent: "center", padding: "60px 0" }}>
+                <CargandoCerebro label="Cargando fuentes..." />
               </div>
+            ) : textosFiltrados.length === 0 ? (
+              <p style={{ textAlign: "center", padding: "40px 0", color: "var(--color-muted)", fontSize: "14px", fontFamily: "var(--font-base)" }}>No se encontraron fuentes.</p>
             ) : (
-              <div className="flux-lib-grid">
-                {textosFiltrados.length === 0 ? (
-                  <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "40px", color: "var(--text-muted)", fontSize: "12px" }}>
-                    No se encontraron conferencias con ese título.
-                  </div>
-                ) : (
-                  textosFiltrados.map((texto, idx) => (
-                    <div
-                      key={idx}
-                      onClick={() => {
-                        if (hasFounderAccess) abrirTexto(texto);
-                      }}
-                      className="flux-class-card"
-                      style={{ opacity: hasFounderAccess ? 1 : 0.82, cursor: hasFounderAccess ? "pointer" : "default" }}
-                    >
-                      <h4 className="flux-class-title">{texto.titulo}</h4>
-                      <div className="flux-class-meta">
-                        <span className="flux-class-badge">Año: {texto.anio}</span>
-                        {texto.tituloOriginal && (
-                          <span className="flux-class-badge" style={{ fontStyle: "italic", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {texto.tituloOriginal}
-                          </span>
-                        )}
-                      </div>
-                      {texto.tags && texto.tags.length > 0 && (
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: "3px", marginTop: "6px" }}>
-                          {texto.tags.slice(0, 4).map((tag) => (
-                            <span key={tag} className="flux-class-badge" style={{ fontSize: "9px", background: "var(--swiss-muted)", opacity: 0.8 }}>
-                              {tag}
-                            </span>
+              <div className="alpha-list">
+                {(() => {
+                  const groups: Record<string, TextoMetadatos[]> = {};
+                  textosFiltrados.forEach((t) => {
+                    const letter = (t.titulo[0] || "#").toUpperCase();
+                    if (!groups[letter]) groups[letter] = [];
+                    groups[letter].push(t);
+                  });
+                  return Object.keys(groups).sort().map((letter) => {
+                    const items = groups[letter];
+                    const isOpen = openAlphaLetters.has(letter);
+                    const toggle = () => setOpenAlphaLetters((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(letter)) next.delete(letter); else next.add(letter);
+                      return next;
+                    });
+                    return (
+                      <div key={letter} className={`alpha-section${isOpen ? " open" : ""}`}>
+                        <button className="alpha-header" onClick={toggle} aria-expanded={isOpen}>
+                          <span className="alpha-letter">{letter}</span>
+                          <span className="alpha-count">{items.length} {items.length === 1 ? "fuente" : "fuentes"}</span>
+                          <span className="alpha-chevron">▾</span>
+                        </button>
+                        <div className="alpha-items">
+                          {items.map((texto, idx) => (
+                            <button
+                              key={idx}
+                              className="alpha-item"
+                              onClick={() => { if (hasFounderAccess) abrirTexto(texto); }}
+                              style={{ opacity: hasFounderAccess ? 1 : 0.75, cursor: hasFounderAccess ? "pointer" : "default" }}
+                            >
+                              <span className="alpha-title">{texto.titulo}</span>
+                              <span className="alpha-meta">
+                                {texto.tituloOriginal ? `${texto.tituloOriginal} · ` : ""}
+                                {texto.anio ? `${texto.anio}` : ""}
+                              </span>
+                            </button>
                           ))}
-                          {texto.tags.length > 4 && (
-                            <span className="flux-class-badge" style={{ fontSize: "9px", background: "var(--swiss-muted)", opacity: 0.6 }}>
-                              +{texto.tags.length - 4}
-                            </span>
-                          )}
                         </div>
-                      )}
-                    </div>
-                  ))
-                )}
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             )}
           </div>
@@ -2098,208 +2082,142 @@ ${contenidoConsolidado}
 
         {/* 4. PREGUNTAS Y RESPUESTAS */}
         {currentTab === "examenes" && (
-          <div style={{ padding: "40px 24px", maxWidth: "900px", margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-            <header className="content-header" style={{ marginBottom: "32px", width: "100%" }}>
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
-                <h2 className="flux-title" style={{ fontSize: "32px", textTransform: "uppercase", fontWeight: 900, margin: 0, letterSpacing: "-0.02em" }}>Preguntas y respuestas</h2>
-              </div>
-              <p className="flux-subtitle" style={{ fontSize: "18px", color: "var(--swiss-fg)", fontWeight: 500 }}>Integrá conceptos y descubrí qué entendiste realmente.</p>
+          <div className="exam-wrap">
+            <header style={{ marginBottom: "20px" }}>
+              <h2 style={{ fontSize: "22px", fontWeight: 700, margin: "0 0 4px", fontFamily: "var(--font-base)", color: "var(--color-dark)" }}>Preguntas y respuestas</h2>
+              <p style={{ fontSize: "14px", color: "var(--color-muted)", margin: 0, fontFamily: "var(--font-base)" }}>Integrá conceptos y descubrí qué entendiste realmente.</p>
             </header>
 
-            {!examStarted ? (
-              <div className="flux-exam-container">
-                <h3 className="flux-exam-title">Preguntas para integrar</h3>
-                <p className="flux-exam-desc">
-                  Generá preguntas sobre una charla, una lectura, una escena, una entrada del diario, un plan o una enseñanza.
-                </p>
-
-                {pendingContext?.target === "examenes" ? (
-                  <div style={{ backgroundColor: "var(--swiss-muted)", border: "2px solid #000", borderRadius: "16px", padding: "20px", marginTop: "16px", marginBottom: "16px" }}>
-                    <h4 style={{ fontSize: "14px", fontWeight: 900, textTransform: "uppercase", marginBottom: "8px" }}>Material para trabajar</h4>
-                    <p style={{ fontSize: "13px", color: "var(--swiss-text-muted)", marginBottom: "12px", fontStyle: "italic" }}>Origen: {pendingContext.source} {pendingContext.title ? `- ${pendingContext.title}` : ""}</p>
-                    <textarea
-                      readOnly
-                      value={pendingContext.content}
-                      style={{ width: "100%", height: "80px", padding: "12px", borderRadius: "12px", border: "1.5px solid var(--swiss-border)", backgroundColor: "var(--swiss-bg)", fontSize: "12px", resize: "none", marginBottom: "12px" }}
-                    />
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                      <button onClick={generarExamen} className="swiss-landing-cta" style={{ padding: "10px 20px", borderRadius: "22px", fontSize: "11px", fontWeight: 900, textTransform: "uppercase" }}>Generar preguntas desde este material</button>
-                      <button onClick={() => setPendingContext(null)} className="flux-btn-secondary" style={{ padding: "10px 20px", borderRadius: "22px", fontSize: "11px", fontWeight: 900, textTransform: "uppercase" }}>Cancelar</button>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "24px", textAlign: "left", width: "100%", maxWidth: "600px", margin: "24px auto 0" }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: "12px", fontWeight: 900, textTransform: "uppercase", marginBottom: "8px" }}>Cantidad de preguntas</label>
-                      <select value={examQuantity} onChange={(e) => setExamQuantity(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "2px solid var(--swiss-border)", backgroundColor: "var(--swiss-bg)", fontSize: "14px" }}>
-                        <option value="3">3 preguntas</option>
-                        <option value="5">5 preguntas</option>
-                        <option value="10">10 preguntas</option>
-                        <option value="15">15 preguntas</option>
-                        <option value="20">20 preguntas</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "12px", fontWeight: 900, textTransform: "uppercase", marginBottom: "8px" }}>Dificultad</label>
-                      <select value={examDifficulty} onChange={(e) => setExamDifficulty(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "2px solid var(--swiss-border)", backgroundColor: "var(--swiss-bg)", fontSize: "14px" }}>
-                        <option value="Inicial">Inicial</option>
-                        <option value="Media">Media</option>
-                        <option value="Profunda">Profunda</option>
-                        <option value="Avanzada">Avanzada</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "12px", fontWeight: 900, textTransform: "uppercase", marginBottom: "8px" }}>Formato</label>
-                      <select value={examFormat} onChange={(e) => setExamFormat(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "2px solid var(--swiss-border)", backgroundColor: "var(--swiss-bg)", fontSize: "14px" }}>
-                        <option value="Texto abierto">Texto abierto</option>
-                        <option value="Opción múltiple">Opción múltiple</option>
-                        <option value="Verdadero o falso">Verdadero o falso</option>
-                        <option value="Mixto">Mixto</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "12px", fontWeight: 900, textTransform: "uppercase", marginBottom: "8px" }}>Material o Tema</label>
-                      <textarea 
-                        value={examMaterial} 
-                        onChange={(e) => setExamMaterial(e.target.value)}
-                        placeholder="Ejemplo: vivir desde el final, revisión, dinero, Moisés, una entrada del diario..."
-                        style={{ width: "100%", height: "100px", padding: "12px", borderRadius: "8px", border: "2px solid var(--swiss-border)", backgroundColor: "var(--swiss-bg)", fontSize: "14px", resize: "none" }}
-                      />
-                    </div>
-                    <button
-                      onClick={generarExamen}
-                      className="swiss-landing-cta"
-                      style={{ width: "100%", padding: "16px", marginTop: "16px", borderRadius: "22px", fontSize: "14px", fontWeight: 900, textTransform: "uppercase" }}
-                      disabled={examLoading}
-                    >
-                      {examLoading ? "Generando preguntas..." : "Generar preguntas"}
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : examLoading ? (
-              <div className="flux-exam-container" style={{ textAlign: "center", padding: "40px" }}>
-                <CargandoCerebro label="La IA está preparando tu examen..." />
-              </div>
-            ) : examQuestions.length === 0 ? (
-              <div className="flux-exam-container" style={{ textAlign: "center", padding: "40px" }}>
-                <p className="text-sm text-stone-500">No se pudieron generar preguntas. Intentá de nuevo.</p>
-                <button onClick={resetearExamen} className="flux-btn-primary" style={{ marginTop: 16 }}>
-                  Volver
-                </button>
-              </div>
-            ) : (
-              <div className="flux-exam-container">
-                {examQuestions.map((p: any, idx: number) => (
-                  <div key={p.id} style={{ marginBottom: "24px", textAlign: "left", backgroundColor: "var(--swiss-muted)", padding: "24px", borderRadius: "16px", border: "1px solid var(--swiss-border)" }}>
-                    <h4 className="font-bold text-[15px] mb-4 text-stone-900 leading-snug">
-                      {idx + 1}. {p.pregunta}
-                    </h4>
-                    {p.tipo === "opcion_multiple" && p.opciones && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                        {p.opciones.map((opc: string, opcIdx: number) => (
-                          <button
-                            key={opcIdx}
-                            onClick={() => {
-                              if (examScore !== null) return;
-                              setAnswers((prev) => ({ ...prev, [p.id]: opcIdx }));
-                            }}
-                            style={{
-                              padding: "12px 16px",
-                              textAlign: "left",
-                              borderRadius: "8px",
-                              border: "2px solid",
-                              borderColor: examScore !== null
-                                ? (opcIdx === p.correcta
-                                    ? "#10b981"
-                                    : answers[p.id] === opcIdx
-                                    ? "var(--swiss-accent)"
-                                    : "transparent")
-                                : answers[p.id] === opcIdx
-                                ? "var(--swiss-fg)"
-                                : "transparent",
-                              backgroundColor: answers[p.id] === opcIdx ? "var(--swiss-bg)" : "var(--swiss-bg)",
-                              color: "var(--swiss-fg)",
-                              fontWeight: 500,
-                              cursor: examScore !== null ? "default" : "pointer",
-                              transition: "all 0.2s"
-                            }}
-                          >
-                            {["A", "B", "C", "D"][opcIdx] || opcIdx + 1}. {opc}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {p.tipo === "verdadero_falso" && (
-                      <div style={{ display: "flex", gap: "12px" }}>
-                        <button
-                          onClick={() => { if (examScore === null) setAnswers(prev => ({...prev, [p.id]: true})) }}
-                          style={{ flex: 1, padding: "12px", borderRadius: "8px", border: "2px solid", borderColor: examScore !== null ? (p.correcta === true ? "#10b981" : answers[p.id] === true ? "var(--swiss-accent)" : "transparent") : answers[p.id] === true ? "var(--swiss-fg)" : "transparent", backgroundColor: "var(--swiss-bg)", cursor: examScore !== null ? "default" : "pointer" }}
-                        >Verdadero</button>
-                        <button
-                          onClick={() => { if (examScore === null) setAnswers(prev => ({...prev, [p.id]: false})) }}
-                          style={{ flex: 1, padding: "12px", borderRadius: "8px", border: "2px solid", borderColor: examScore !== null ? (p.correcta === false ? "#10b981" : answers[p.id] === false ? "var(--swiss-accent)" : "transparent") : answers[p.id] === false ? "var(--swiss-fg)" : "transparent", backgroundColor: "var(--swiss-bg)", cursor: examScore !== null ? "default" : "pointer" }}
-                        >Falso</button>
-                      </div>
-                    )}
-
-                    {p.tipo === "texto_abierto" && (
-                      <textarea
-                        disabled={examScore !== null}
-                        value={answers[p.id] as string || ""}
-                        onChange={(e) => setAnswers(prev => ({...prev, [p.id]: e.target.value}))}
-                        style={{ width: "100%", height: "100px", padding: "12px", borderRadius: "8px", border: "2px solid var(--swiss-border)", backgroundColor: "var(--swiss-bg)", fontSize: "14px", resize: "none" }}
-                        placeholder="Escribí tu reflexión acá..."
-                      />
-                    )}
-
-                    {examScore !== null && p.explicacion && (
-                      <div style={{ marginTop: "16px", padding: "16px", backgroundColor: "var(--swiss-bg)", borderRadius: "8px", borderLeft: "4px solid var(--swiss-accent)", fontSize: "13px" }}>
-                        <strong>Explicación:</strong> {p.explicacion}
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                <div className="flux-card__header" style={{ marginTop: "24px" }}>
-                  {examScore === null ? (
+            <div className="exam-layout">
+              {/* ── Columna izquierda: form ── */}
+              <div className="exam-sidebar">
+                <div className="exam-form-card">
+                  {pendingContext?.target === "examenes" ? (
                     <>
-                      <button onClick={resetearExamen} className="flux-btn-secondary">
-                        Cancelar
-                      </button>
-                      <button
-                        onClick={corregirExamen}
-                        className="flux-btn-primary"
-                        style={{ marginTop: 0 }}
-                        disabled={Object.keys(answers).length < examQuestions.length}
-                      >
-                        Entregar Examen
-                      </button>
+                      <label style={{ display: "block", fontSize: "12px", fontWeight: 600, marginBottom: "6px", fontFamily: "var(--font-base)", color: "var(--color-muted)" }}>Material recibido</label>
+                      <p style={{ fontSize: "12px", color: "var(--color-muted)", marginBottom: "8px", fontStyle: "italic", fontFamily: "var(--font-base)" }}>De: {pendingContext.source}</p>
+                      <textarea readOnly value={pendingContext.content} style={{ width: "100%", height: "80px", padding: "10px 12px", borderRadius: "10px", border: "0.5px solid var(--color-border)", backgroundColor: "var(--color-bg)", fontSize: "12px", resize: "none", marginBottom: "10px", fontFamily: "var(--font-base)", boxSizing: "border-box" }} />
+                      <button onClick={generarExamen} className="swiss-landing-cta" style={{ width: "100%", padding: "12px", borderRadius: "10px", fontSize: "13px", fontWeight: 600 }}>Generar preguntas</button>
+                      <button onClick={() => setPendingContext(null)} className="flux-btn-secondary" style={{ width: "100%", padding: "10px", borderRadius: "10px", fontSize: "12px", marginTop: "8px" }}>Cancelar</button>
                     </>
                   ) : (
-                    <div style={{ width: "100%", textAlign: "center" }}>
-                      <div style={{ padding: "16px", background: "var(--swiss-muted)", border: "2px solid var(--swiss-border)", marginBottom: "16px" }}>
-                        <h4 className="text-sm font-bold text-stone-900 mb-1 uppercase tracking-wider">
-                          Resultado
-                        </h4>
-                        <p className="text-xl font-bold mb-2">
-                          {examScore} / {examQuestions.length} correctas
-                        </p>
-                        <p className="text-[11px] text-stone-500 leading-relaxed">
-                          {examScore === examQuestions.length
-                            ? "Excelente asunción doctrinal."
-                            : "Repasá los textos del Archivo y volvé a intentarlo."}
-                        </p>
+                    <>
+                      <div>
+                        <label style={{ display: "block", fontSize: "12px", fontWeight: 600, marginBottom: "6px", fontFamily: "var(--font-base)", color: "var(--color-muted)" }}>Cantidad</label>
+                        <select value={examQuantity} onChange={(e) => setExamQuantity(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: "10px", border: "0.5px solid var(--color-border)", backgroundColor: "var(--color-bg)", fontSize: "14px", fontFamily: "var(--font-base)" }}>
+                          <option value="3">3 preguntas</option>
+                          <option value="5">5 preguntas</option>
+                          <option value="10">10 preguntas</option>
+                          <option value="15">15 preguntas</option>
+                          <option value="20">20 preguntas</option>
+                        </select>
                       </div>
-                      <button onClick={resetearExamen} className="flux-btn-primary" style={{ width: "100%", marginTop: 0 }}>
-                        Intentar de Nuevo
+                      <div>
+                        <label style={{ display: "block", fontSize: "12px", fontWeight: 600, marginBottom: "6px", fontFamily: "var(--font-base)", color: "var(--color-muted)" }}>Dificultad</label>
+                        <select value={examDifficulty} onChange={(e) => setExamDifficulty(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: "10px", border: "0.5px solid var(--color-border)", backgroundColor: "var(--color-bg)", fontSize: "14px", fontFamily: "var(--font-base)" }}>
+                          <option value="Inicial">Inicial</option>
+                          <option value="Media">Media</option>
+                          <option value="Profunda">Profunda</option>
+                          <option value="Avanzada">Avanzada</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "12px", fontWeight: 600, marginBottom: "6px", fontFamily: "var(--font-base)", color: "var(--color-muted)" }}>Formato</label>
+                        <select value={examFormat} onChange={(e) => setExamFormat(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: "10px", border: "0.5px solid var(--color-border)", backgroundColor: "var(--color-bg)", fontSize: "14px", fontFamily: "var(--font-base)" }}>
+                          <option value="Texto abierto">Texto abierto</option>
+                          <option value="Opción múltiple">Opción múltiple</option>
+                          <option value="Verdadero o falso">Verdadero o falso</option>
+                          <option value="Mixto">Mixto</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "12px", fontWeight: 600, marginBottom: "6px", fontFamily: "var(--font-base)", color: "var(--color-muted)" }}>Material o tema</label>
+                        <textarea
+                          value={examMaterial}
+                          onChange={(e) => setExamMaterial(e.target.value)}
+                          placeholder="vivir desde el final, revisión, dinero, Moisés..."
+                          rows={3}
+                          style={{ width: "100%", padding: "10px 12px", borderRadius: "10px", border: "0.5px solid var(--color-border)", background: "var(--color-bg)", fontSize: "14px", fontFamily: "var(--font-base)", resize: "vertical", outline: "none", boxSizing: "border-box" }}
+                        />
+                      </div>
+                      <button onClick={generarExamen} className="swiss-landing-cta" style={{ width: "100%", padding: "13px", borderRadius: "10px", fontSize: "14px", fontWeight: 600 }} disabled={examLoading}>
+                        {examLoading ? "Generando..." : "Generar preguntas"}
                       </button>
-                    </div>
+                    </>
                   )}
                 </div>
               </div>
-            )}
+
+              {/* ── Columna derecha: resultados ── */}
+              <div className="exam-results-col">
+                {!examStarted ? (
+                  <div className="exam-empty">
+                    <HelpCircle size={36} style={{ color: "var(--color-muted)", opacity: 0.35 }} />
+                    <h3>Las preguntas aparecerán acá</h3>
+                    <p>Completá el formulario y generá tu set de preguntas.</p>
+                  </div>
+                ) : examLoading ? (
+                  <div className="exam-empty">
+                    <CargandoCerebro label="Preparando preguntas..." />
+                  </div>
+                ) : examQuestions.length === 0 ? (
+                  <div className="exam-empty">
+                    <p style={{ color: "var(--color-muted)", fontSize: "14px" }}>No se pudieron generar preguntas. Intentá de nuevo.</p>
+                    <button onClick={resetearExamen} className="flux-btn-primary" style={{ marginTop: 12 }}>Volver</button>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                    {examQuestions.map((p: any, idx: number) => (
+                      <div key={p.id} style={{ backgroundColor: "var(--color-surface)", padding: "20px 22px", borderRadius: "14px", border: "0.5px solid var(--color-border)", boxShadow: "var(--shadow-card)" }}>
+                        <h4 style={{ fontSize: "15px", fontWeight: 600, marginBottom: "14px", color: "var(--color-dark)", lineHeight: 1.4, fontFamily: "var(--font-base)" }}>
+                          {idx + 1}. {p.pregunta}
+                        </h4>
+                        {p.tipo === "opcion_multiple" && p.opciones && (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                            {p.opciones.map((opc: string, opcIdx: number) => (
+                              <button key={opcIdx} onClick={() => { if (examScore !== null) return; setAnswers((prev) => ({ ...prev, [p.id]: opcIdx })); }} style={{ padding: "10px 14px", textAlign: "left", borderRadius: "8px", border: "2px solid", borderColor: examScore !== null ? (opcIdx === p.correcta ? "#10b981" : answers[p.id] === opcIdx ? "var(--swiss-accent)" : "transparent") : answers[p.id] === opcIdx ? "var(--swiss-fg)" : "transparent", backgroundColor: "var(--color-bg)", color: "var(--color-dark)", fontWeight: 500, cursor: examScore !== null ? "default" : "pointer", fontSize: "14px", fontFamily: "var(--font-base)", transition: "border-color 0.15s" }}>
+                                {["A", "B", "C", "D"][opcIdx] || opcIdx + 1}. {opc}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {p.tipo === "verdadero_falso" && (
+                          <div style={{ display: "flex", gap: "10px" }}>
+                            <button onClick={() => { if (examScore === null) setAnswers(prev => ({...prev, [p.id]: true})) }} style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "2px solid", borderColor: examScore !== null ? (p.correcta === true ? "#10b981" : answers[p.id] === true ? "var(--swiss-accent)" : "transparent") : answers[p.id] === true ? "var(--swiss-fg)" : "transparent", backgroundColor: "var(--color-bg)", cursor: examScore !== null ? "default" : "pointer", fontFamily: "var(--font-base)", fontSize: "14px" }}>Verdadero</button>
+                            <button onClick={() => { if (examScore === null) setAnswers(prev => ({...prev, [p.id]: false})) }} style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "2px solid", borderColor: examScore !== null ? (p.correcta === false ? "#10b981" : answers[p.id] === false ? "var(--swiss-accent)" : "transparent") : answers[p.id] === false ? "var(--swiss-fg)" : "transparent", backgroundColor: "var(--color-bg)", cursor: examScore !== null ? "default" : "pointer", fontFamily: "var(--font-base)", fontSize: "14px" }}>Falso</button>
+                          </div>
+                        )}
+                        {p.tipo === "texto_abierto" && (
+                          <textarea disabled={examScore !== null} value={answers[p.id] as string || ""} onChange={(e) => setAnswers(prev => ({...prev, [p.id]: e.target.value}))} style={{ width: "100%", height: "90px", padding: "10px 12px", borderRadius: "8px", border: "0.5px solid var(--color-border)", backgroundColor: "var(--color-bg)", fontSize: "14px", fontFamily: "var(--font-base)", resize: "none", outline: "none", boxSizing: "border-box" }} placeholder="Escribí tu reflexión acá..." />
+                        )}
+                        {examScore !== null && p.explicacion && (
+                          <div style={{ marginTop: "14px", padding: "12px 14px", backgroundColor: "var(--color-bg)", borderRadius: "8px", borderLeft: "3px solid var(--color-accent)", fontSize: "13px", fontFamily: "var(--font-base)" }}>
+                            <strong>Explicación:</strong> {p.explicacion}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
+                      {examScore === null ? (
+                        <>
+                          <button onClick={resetearExamen} className="flux-btn-secondary">Cancelar</button>
+                          <button onClick={corregirExamen} className="flux-btn-primary" style={{ marginTop: 0 }} disabled={Object.keys(answers).length < examQuestions.length}>Entregar Examen</button>
+                        </>
+                      ) : (
+                        <div style={{ width: "100%" }}>
+                          <div style={{ padding: "16px 20px", background: "var(--color-surface)", border: "0.5px solid var(--color-border)", borderRadius: "12px", marginBottom: "12px", textAlign: "center" }}>
+                            <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--color-muted)", margin: "0 0 4px", fontFamily: "var(--font-base)" }}>Resultado</p>
+                            <p style={{ fontSize: "24px", fontWeight: 700, margin: "0 0 4px", fontFamily: "var(--font-base)", color: "var(--color-dark)" }}>{examScore} / {examQuestions.length}</p>
+                            <p style={{ fontSize: "12px", color: "var(--color-muted)", margin: 0, fontFamily: "var(--font-base)" }}>{examScore === examQuestions.length ? "Excelente asunción doctrinal." : "Repasá los textos y volvé a intentarlo."}</p>
+                          </div>
+                          <button onClick={resetearExamen} className="flux-btn-primary" style={{ width: "100%", marginTop: 0 }}>Intentar de nuevo</button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -2311,7 +2229,7 @@ ${contenidoConsolidado}
                 <div style={{ backgroundColor: "var(--swiss-accent)", color: "#fff", padding: "12px", borderRadius: "16px" }}>
                   <BookOpen size={24} />
                 </div>
-                <h2 className="flux-title" style={{ fontSize: "32px", textTransform: "uppercase", fontWeight: 900, margin: 0, letterSpacing: "-0.02em" }}>
+                <h2 style={{ fontSize: "22px", fontWeight: 700, margin: 0, fontFamily: "var(--font-base)", color: "var(--color-dark)" }}>
                   Mi libro
                 </h2>
               </div>
@@ -2326,13 +2244,13 @@ ${contenidoConsolidado}
             {!bookDraft && (
               <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
                 {pendingContext?.target === "libro" && (
-                  <div style={{ backgroundColor: "var(--swiss-muted)", border: "2px solid #000", borderRadius: "16px", padding: "24px" }}>
-                    <h3 style={{ fontSize: "16px", fontWeight: 900, textTransform: "uppercase", marginBottom: "8px" }}>Material recibido</h3>
+                  <div style={{ background: "var(--color-surface)", border: "0.5px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: "20px", boxShadow: "var(--shadow-card)" }}>
+                    <h3 style={{ fontSize: "15px", fontWeight: 600, marginBottom: "8px", fontFamily: "var(--font-base)", color: "var(--color-dark)" }}>Material recibido</h3>
                     <p style={{ fontSize: "13px", color: "var(--swiss-text-muted)", marginBottom: "16px", fontStyle: "italic" }}>Origen: {pendingContext.source} {pendingContext.title ? `- ${pendingContext.title}` : ""}</p>
                     <textarea
                       readOnly
                       value={pendingContext.content}
-                      style={{ width: "100%", height: "120px", padding: "16px", borderRadius: "16px", border: "1.5px solid var(--swiss-border)", backgroundColor: "var(--swiss-bg)", fontSize: "13px", resize: "none", marginBottom: "16px" }}
+                      style={{ width: "100%", height: "100px", padding: "14px 16px", borderRadius: "var(--radius-sm)", border: "0.5px solid var(--color-border)", background: "var(--color-bg)", fontSize: "13px", fontFamily: "var(--font-base)", resize: "none", marginBottom: "14px", outline: "none", boxSizing: "border-box" }}
                     />
                     <button
                       type="button"
@@ -2341,7 +2259,7 @@ ${contenidoConsolidado}
                         setPendingContext(null);
                       }}
                       className="swiss-landing-cta"
-                      style={{ padding: "10px 20px", borderRadius: "22px", fontSize: "11px", fontWeight: 900, textTransform: "uppercase" }}
+                      style={{ padding: "10px 20px", borderRadius: "var(--radius-md)", fontSize: "13px", fontWeight: 600 }}
                     >
                       Usar este material
                     </button>
@@ -2351,20 +2269,21 @@ ${contenidoConsolidado}
                 <form
                   onSubmit={handleCrearLibro}
                   style={{
-                  backgroundColor: "var(--swiss-bg)",
-                  border: "2px solid #000",
-                  borderRadius: "22px",
-                  padding: "28px",
+                  background: "var(--color-surface)",
+                  border: "0.5px solid var(--color-border)",
+                  borderRadius: "var(--radius-lg)",
+                  padding: "24px",
                   display: "flex",
                   flexDirection: "column",
-                  gap: "16px"
+                  gap: "16px",
+                  boxShadow: "var(--shadow-card)"
                   }}
                 >
-                  <h3 style={{ fontSize: "16px", fontWeight: 900, textTransform: "uppercase" }}>Crear libro nuevo</h3>
+                  <h3 style={{ fontSize: "17px", fontWeight: 600, fontFamily: "var(--font-base)", color: "var(--color-dark)", margin: 0 }}>Crear libro nuevo</h3>
                   
                   <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                     <div>
-                      <label style={{ fontSize: "11px", fontWeight: 900, textTransform: "uppercase", color: "var(--swiss-text-muted)", display: "block", marginBottom: "6px" }}>Título del libro</label>
+                      <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--color-muted)", display: "block", marginBottom: "6px", fontFamily: "var(--font-base)" }}>Título del libro</label>
                       <input
                         type="text"
                         value={bookForm.title}
@@ -2374,15 +2293,15 @@ ${contenidoConsolidado}
                           width: "100%",
                           padding: "12px 16px",
                           borderRadius: "16px",
-                          border: "2px solid var(--swiss-border)",
+                          border: "0.5px solid var(--color-border)",
                           fontSize: "14px",
-                          fontFamily: "inherit",
+                          fontFamily: "var(--font-base)",
                           boxSizing: "border-box"
                         }}
                       />
                     </div>
                     <div>
-                      <label style={{ fontSize: "11px", fontWeight: 900, textTransform: "uppercase", color: "var(--swiss-text-muted)", display: "block", marginBottom: "6px" }}>Tema central</label>
+                      <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--color-muted)", display: "block", marginBottom: "6px", fontFamily: "var(--font-base)" }}>Tema central</label>
                       <input
                         type="text"
                         value={bookForm.theme}
@@ -2392,15 +2311,15 @@ ${contenidoConsolidado}
                           width: "100%",
                           padding: "12px 16px",
                           borderRadius: "16px",
-                          border: "2px solid var(--swiss-border)",
+                          border: "0.5px solid var(--color-border)",
                           fontSize: "14px",
-                          fontFamily: "inherit",
+                          fontFamily: "var(--font-base)",
                           boxSizing: "border-box"
                         }}
                       />
                     </div>
                     <div>
-                      <label style={{ fontSize: "11px", fontWeight: 900, textTransform: "uppercase", color: "var(--swiss-text-muted)", display: "block", marginBottom: "6px" }}>¿Qué querés que incluya?</label>
+                      <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--color-muted)", display: "block", marginBottom: "6px", fontFamily: "var(--font-base)" }}>¿Qué querés que incluya?</label>
                       <textarea
                         value={bookForm.include}
                         onChange={(event) => updateBookForm("include", event.target.value)}
@@ -2410,16 +2329,16 @@ ${contenidoConsolidado}
                           width: "100%",
                           padding: "12px 16px",
                           borderRadius: "16px",
-                          border: "2px solid var(--swiss-border)",
+                          border: "0.5px solid var(--color-border)",
                           fontSize: "14px",
-                          fontFamily: "inherit",
+                          fontFamily: "var(--font-base)",
                           resize: "vertical",
                           boxSizing: "border-box"
                         }}
                       />
                     </div>
                     <div>
-                      <label style={{ fontSize: "11px", fontWeight: 900, textTransform: "uppercase", color: "var(--swiss-text-muted)", display: "block", marginBottom: "6px" }}>Tono</label>
+                      <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--color-muted)", display: "block", marginBottom: "6px", fontFamily: "var(--font-base)" }}>Tono</label>
                       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                         {["Práctico", "Narrativo", "Estudio", "Íntimo"].map((tono) => (
                           <button
@@ -2429,11 +2348,12 @@ ${contenidoConsolidado}
                             style={{
                               padding: "8px 16px",
                               borderRadius: "22px",
-                              border: bookForm.tone === tono ? "2px solid #000" : "2px solid var(--swiss-border)",
-                              backgroundColor: bookForm.tone === tono ? "var(--swiss-fg)" : "var(--swiss-muted)",
-                              color: bookForm.tone === tono ? "#fff" : "var(--swiss-fg)",
-                              fontSize: "12px",
-                              fontWeight: 700,
+                              border: bookForm.tone === tono ? "1.5px solid var(--color-dark)" : "0.5px solid var(--color-border)",
+                              backgroundColor: bookForm.tone === tono ? "var(--color-dark)" : "var(--color-bg)",
+                              color: bookForm.tone === tono ? "#fff" : "var(--color-dark)",
+                              fontSize: "13px",
+                              fontWeight: 600,
+                              fontFamily: "var(--font-base)",
                               cursor: "pointer",
                               transition: "border-color 0.15s ease"
                             }}
@@ -2457,7 +2377,7 @@ ${contenidoConsolidado}
                     type="submit"
                     disabled={bookLoading}
                     className="swiss-landing-cta"
-                    style={{ padding: "14px 20px", borderRadius: "999px", fontSize: "13px", fontWeight: 900, textTransform: "uppercase", alignSelf: "flex-start", opacity: bookLoading ? 0.65 : 1, cursor: bookLoading ? "not-allowed" : "pointer" }}
+                    style={{ padding: "14px 20px", borderRadius: "var(--radius-pill)", fontSize: "14px", fontWeight: 600, fontFamily: "var(--font-base)", alignSelf: "flex-start", opacity: bookLoading ? 0.65 : 1, cursor: bookLoading ? "not-allowed" : "pointer" }}
                   >
                     {bookLoading ? "Creando libro..." : "Crear libro"}
                   </button>
@@ -2467,7 +2387,7 @@ ${contenidoConsolidado}
                   <button
                     type="button"
                     onClick={() => resetBookDraft()}
-                    style={{ padding: "14px 16px", borderRadius: "22px", border: "2px solid #000", backgroundColor: "var(--swiss-bg)", fontSize: "12px", fontWeight: 900, textTransform: "uppercase", cursor: "pointer", textAlign: "left" }}
+                    style={{ padding: "14px 16px", borderRadius: "var(--radius-lg)", border: "0.5px solid var(--color-border)", backgroundColor: "var(--color-surface)", fontSize: "13px", fontWeight: 600, fontFamily: "var(--font-base)", cursor: "pointer", textAlign: "left", color: "var(--color-dark)" }}
                   >
                     Crear libro desde cero
                   </button>
@@ -2481,7 +2401,7 @@ ${contenidoConsolidado}
                       key={label}
                       type="button"
                       disabled
-                      style={{ padding: "14px 16px", borderRadius: "22px", border: "2px solid var(--swiss-border)", backgroundColor: "var(--swiss-muted)", color: "var(--swiss-text-muted)", fontSize: "12px", fontWeight: 900, textTransform: "uppercase", cursor: "not-allowed", textAlign: "left", opacity: 0.72 }}
+                      style={{ padding: "14px 16px", borderRadius: "var(--radius-lg)", border: "0.5px solid var(--color-border)", backgroundColor: "var(--color-bg)", color: "var(--color-muted)", fontSize: "13px", fontWeight: 500, fontFamily: "var(--font-base)", cursor: "not-allowed", textAlign: "left", opacity: 0.65 }}
                     >
                       {label}
                     </button>
@@ -2490,84 +2410,59 @@ ${contenidoConsolidado}
               </div>
             )}
 
-            {bookDraft && (
-              <div style={{
-                backgroundColor: "var(--swiss-bg)",
-                border: "2px solid #000",
-                borderRadius: "22px",
-                padding: "28px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "18px"
-              }}>
-                <div>
-                  <p style={{ margin: "0 0 6px", fontSize: "11px", fontWeight: 900, textTransform: "uppercase", color: "var(--swiss-text-muted)" }}>Borrador de libro</p>
-                  <h3 style={{ margin: 0, fontSize: "24px", fontWeight: 900, textTransform: "uppercase" }}>{bookForm.title}</h3>
-                  <p style={{ margin: "8px 0 0", fontSize: "13px", fontWeight: 700, color: "var(--swiss-text-muted)" }}>
-                    Tema: {bookForm.theme} · Tono: {bookForm.tone}
-                  </p>
-                </div>
-
-                <div style={{ backgroundColor: "var(--swiss-muted)", borderRadius: "16px", padding: "20px", fontSize: "14px", lineHeight: 1.7, whiteSpace: "normal" }}>
-                  {parseMarkdown(bookDraft)}
-                </div>
-
-                {bookError && (
-                  <p style={{ margin: 0, fontSize: "13px", fontWeight: 800, color: "var(--swiss-accent)" }}>{bookError}</p>
-                )}
-                {bookSavedMessage && (
-                  <p style={{ margin: 0, fontSize: "13px", fontWeight: 800, color: "var(--swiss-fg)" }}>{bookSavedMessage}</p>
-                )}
-
-                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                  <button
-                    type="button"
-                    onClick={handleGuardarLibroEnMemoria}
-                    disabled={bookSavingMemory}
-                    className="swiss-landing-cta"
-                    style={{ borderRadius: "999px", padding: "10px 16px", fontSize: "11px", fontWeight: 900, textTransform: "uppercase", opacity: bookSavingMemory ? 0.65 : 1 }}
-                  >
-                    {bookSavingMemory ? "Guardando..." : "Guardar en memoria"}
-                  </button>
-                  <button
-                    type="button"
-                    disabled
-                    style={{ borderRadius: "999px", padding: "10px 16px", fontSize: "11px", fontWeight: 900, textTransform: "uppercase", border: "1.5px solid var(--swiss-border)", backgroundColor: "var(--swiss-muted)", color: "var(--swiss-text-muted)", cursor: "not-allowed" }}
-                  >
-                    Agregar material del diario — próximamente
-                  </button>
-                  <button
-                    type="button"
-                    disabled
-                    style={{ borderRadius: "999px", padding: "10px 16px", fontSize: "11px", fontWeight: 900, textTransform: "uppercase", border: "1.5px solid var(--swiss-border)", backgroundColor: "var(--swiss-muted)", color: "var(--swiss-text-muted)", cursor: "not-allowed" }}
-                  >
-                    Agregar conversaciones — próximamente
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => sendToSection("examenes", { source: "Mi libro", title: bookForm.title, action: "examenes", content: bookDraft })}
-                    style={{ borderRadius: "999px", padding: "10px 16px", fontSize: "11px", fontWeight: 900, textTransform: "uppercase", border: "1.5px solid #000", backgroundColor: "var(--swiss-bg)", color: "var(--swiss-fg)", cursor: "pointer" }}
-                  >
-                    Crear preguntas sobre este libro
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => sendToSection("planes", { source: "Mi libro", title: bookForm.title, action: "planes", content: bookDraft })}
-                    style={{ borderRadius: "999px", padding: "10px 16px", fontSize: "11px", fontWeight: 900, textTransform: "uppercase", border: "1.5px solid #000", backgroundColor: "var(--swiss-bg)", color: "var(--swiss-fg)", cursor: "pointer" }}
-                  >
-                    Convertir en plan
-                  </button>
-                  <button
-                    type="button"
-                    onClick={resetBookDraft}
-                    className="flux-btn-secondary"
-                    style={{ borderRadius: "999px", padding: "10px 16px", fontSize: "11px", fontWeight: 900, textTransform: "uppercase" }}
-                  >
-                    Crear otro libro
-                  </button>
-                </div>
-              </div>
-            )}
+            {bookDraft && (() => {
+              const rawChapters = bookDraft.split(/\n(?=## )/).filter(Boolean);
+              const chapters = rawChapters.map((chunk, i) => {
+                const lines = chunk.split("\n");
+                const heading = lines[0].replace(/^##\s*/, "").trim();
+                const body = lines.slice(1).join("\n").trim();
+                return { num: i + 1, title: heading || `Capítulo ${i + 1}`, body };
+              });
+              return (
+                <article className={`book-card${bookOpen ? " open" : ""}`}>
+                  <header className="book-card-head">
+                    <div className="book-info">
+                      <h3>{bookForm.title || "Borrador"}</h3>
+                      <p className="book-meta">{bookForm.tone} · {chapters.length} capítulo{chapters.length !== 1 ? "s" : ""} · {bookForm.theme}</p>
+                    </div>
+                    <button className="book-toggle" onClick={() => setBookOpen(v => !v)}>
+                      {bookOpen ? "Cerrar" : "Abrir libro →"}
+                    </button>
+                  </header>
+                  <div className="book-body">
+                    {chapters.map((ch) => {
+                      const isOpen = openChapters.has(ch.num);
+                      return (
+                        <div key={ch.num} className={`book-chapter${isOpen ? " open" : ""}`}>
+                          <button className="chapter-head" onClick={() => setOpenChapters(prev => { const next = new Set(prev); if (next.has(ch.num)) next.delete(ch.num); else next.add(ch.num); return next; })}>
+                            <span className="chapter-num">{ch.num}</span>
+                            <span className="chapter-title">{ch.title}</span>
+                            <span className="chapter-chevron">▾</span>
+                          </button>
+                          <div className="chapter-content">{parseMarkdown(ch.body)}</div>
+                        </div>
+                      );
+                    })}
+                    {bookError && <p style={{ margin: "12px 0 0", fontSize: "13px", fontWeight: 700, color: "var(--color-accent)", fontFamily: "var(--font-base)" }}>{bookError}</p>}
+                    {bookSavedMessage && <p style={{ margin: "12px 0 0", fontSize: "13px", fontWeight: 700, color: "var(--color-dark)", fontFamily: "var(--font-base)" }}>{bookSavedMessage}</p>}
+                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "20px", borderTop: "0.5px solid var(--color-border)", paddingTop: "16px" }}>
+                      <button type="button" onClick={handleGuardarLibroEnMemoria} disabled={bookSavingMemory} className="swiss-landing-cta" style={{ borderRadius: "100px", padding: "10px 18px", fontSize: "13px", fontWeight: 600, opacity: bookSavingMemory ? 0.65 : 1 }}>
+                        {bookSavingMemory ? "Guardando..." : "Guardar en memoria"}
+                      </button>
+                      <button type="button" onClick={() => sendToSection("examenes", { source: "Mi libro", title: bookForm.title, action: "examenes", content: bookDraft })} className="coach-quick-btn">
+                        Crear preguntas
+                      </button>
+                      <button type="button" onClick={() => sendToSection("planes", { source: "Mi libro", title: bookForm.title, action: "planes", content: bookDraft })} className="coach-quick-btn">
+                        Convertir en plan
+                      </button>
+                      <button type="button" onClick={resetBookDraft} className="flux-btn-secondary" style={{ borderRadius: "100px", padding: "10px 18px", fontSize: "13px" }}>
+                        Crear otro libro
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              );
+            })()}
           </div>
         )}
 
@@ -2594,68 +2489,77 @@ ${contenidoConsolidado}
 
         {/* 7. PLANES */}
         {currentTab === "planes" && (
-          <div>
-            <header className="content-header" style={{ marginBottom: "20px" }}>
-              <h2 className="flux-title" style={{ fontSize: "20px" }}>Planes Personalizados</h2>
-              <p className="flux-subtitle">Prácticas guiadas de 7, 15 o 30 días diseñadas para tu crecimiento.</p>
-            </header>
+          <div className="planes-wrap">
 
+            {/* Pending context desde otra pantalla */}
             {pendingContext?.target === "planes" && (
-              <div style={{ backgroundColor: "var(--swiss-bg)", border: "2px solid #000", borderRadius: "22px", padding: "32px", marginBottom: "32px" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: 900, textTransform: "uppercase", marginBottom: "16px" }}>
-                  Crear plan desde: {pendingContext.source} {pendingContext.title ? `- ${pendingContext.title}` : ""}
-                </h3>
+              <div className="planes-pending-card">
+                <p className="planes-pending-title">
+                  Crear plan desde: {pendingContext.source}{pendingContext.title ? ` — ${pendingContext.title}` : ""}
+                </p>
                 <textarea
                   readOnly
                   value={pendingContext.content}
-                  style={{ width: "100%", height: "120px", padding: "16px", borderRadius: "16px", border: "2px solid var(--swiss-border)", backgroundColor: "var(--swiss-muted)", fontSize: "13px", resize: "none", marginBottom: "16px" }}
+                  className="planes-pending-textarea"
                 />
-                <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                  <button onClick={() => setPendingContext(null)} className="swiss-landing-cta" style={{ padding: "12px 24px", borderRadius: "22px", fontSize: "12px", fontWeight: 900, textTransform: "uppercase" }}>Plan de 7 días</button>
-                  <button onClick={() => setPendingContext(null)} className="swiss-landing-cta" style={{ padding: "12px 24px", borderRadius: "22px", fontSize: "12px", fontWeight: 900, textTransform: "uppercase" }}>Plan de 15 días</button>
-                  <button onClick={() => setPendingContext(null)} className="swiss-landing-cta" style={{ padding: "12px 24px", borderRadius: "22px", fontSize: "12px", fontWeight: 900, textTransform: "uppercase" }}>Plan de 30 días</button>
-                  <button onClick={() => setPendingContext(null)} className="flux-btn-secondary" style={{ padding: "12px 24px", borderRadius: "22px", fontSize: "12px", fontWeight: 900, textTransform: "uppercase" }}>Cancelar</button>
+                <div className="planes-pending-btns">
+                  <button onClick={() => setPendingContext(null)} className="planes-pending-btn">Plan de 7 días</button>
+                  <button onClick={() => setPendingContext(null)} className="planes-pending-btn">Plan de 15 días</button>
+                  <button onClick={() => setPendingContext(null)} className="planes-pending-btn">Plan de 30 días</button>
+                  <button onClick={() => setPendingContext(null)} className="planes-pending-cancel">Cancelar</button>
                 </div>
               </div>
             )}
 
+            {/* Plan activo — demo (día 3 de 7) */}
+            <div className="planes-active-card">
+              <span className="planes-active-tag">Plan activo · Día 3 de 7</span>
+              <h2 className="planes-active-name">Sostener el deseo</h2>
+              <p className="planes-active-meta">Intensidad media · 4 días restantes</p>
+              <div className="planes-active-progress">
+                <div className="planes-active-progress-fill" style={{ width: "43%" }} />
+              </div>
+              <button className="planes-active-btn" onClick={() => setCurrentTab("aula")}>
+                Continuar →
+              </button>
+            </div>
+
+            {/* Título sección */}
+            <span className="planes-section-label">Comenzar un nuevo plan</span>
+
+            {/* Lista de planes disponibles */}
             {loadingPlanes ? (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "60px 0" }}>
+              <div style={{ display: "flex", justifyContent: "center", padding: "40px 0" }}>
                 <CargandoCerebro label="Cargando planes..." />
               </div>
             ) : planes.length === 0 ? (
-              <div className="flux-exam-container" style={{ textAlign: "center", padding: "40px" }}>
-                <MapIconLucide size={32} className="text-stone-300 mb-3" style={{ margin: "0 auto 12px" }} />
-                <h4 className="text-sm font-bold text-stone-900 mb-2">Todavía no hay planes</h4>
-                <p className="text-[11px] text-stone-500 mb-4">Podés crear uno desde un deseo, una charla, una entrada del diario o una escena.</p>
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center" }}>
-                  <button onClick={() => setCurrentTab("aula")} className="flux-btn-primary" style={{ marginTop: 0 }}>Crear plan de 7 días</button>
-                  <button onClick={() => setCurrentTab("aula")} className="flux-btn-primary" style={{ marginTop: 0 }}>Crear plan de 15 días</button>
-                  <button onClick={() => setCurrentTab("aula")} className="flux-btn-primary" style={{ marginTop: 0 }}>Crear plan de 30 días</button>
-                  <button onClick={() => setCurrentTab("aula")} className="flux-btn-secondary" style={{ marginTop: 0 }}>Crear plan desde Coach</button>
-                </div>
+              <div className="planes-empty">
+                <MapIconLucide size={32} style={{ color: "var(--color-muted)" }} />
+                <p>Todavía no hay planes publicados. Podés pedirle al Coach que te arme uno.</p>
+                <button onClick={() => setCurrentTab("aula")} className="planes-empty-btn">
+                  Ir al Coach
+                </button>
               </div>
             ) : (
-              <div className="flux-lib-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
+              <div className="planes-list">
                 {planes.map((p: any) => (
-                  <div key={p.id} className="flux-exam-container" style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
-                    <h4 className="font-bold text-[13px] text-stone-900 leading-snug">{p.title_es}</h4>
+                  <div key={p.id} className="planes-card">
+                    <h3 className="planes-card-name">{p.title_es}</h3>
                     {p.description_es && (
-                      <p className="text-[11px] text-stone-500 leading-relaxed">{p.description_es}</p>
+                      <p className="planes-card-desc">{p.description_es}</p>
                     )}
-                    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "4px" }}>
-                      <span className="flux-class-badge">{p.duration_days} días</span>
-                      <span className="flux-class-badge">{p.level === "intro" ? "Inicial" : p.level === "intermediate" ? "Intermedio" : "Avanzado"}</span>
+                    <div className="planes-card-badges">
+                      <span className="planes-badge-dur">{p.duration_days} días</span>
+                      <span className="planes-badge-lvl">
+                        {p.level === "intro" ? "Inicial" : p.level === "intermediate" ? "Intermedio" : "Avanzado"}
+                      </span>
                     </div>
-                    <div style={{ marginTop: "8px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10px", color: "var(--swiss-text-muted)", marginBottom: "4px" }}>
-                        <span>Progreso</span>
-                        <span>0%</span>
-                      </div>
-                      <div className="flux-progress-bar" style={{ height: "4px" }}>
-                        <div className="flux-progress-bar__fill" style={{ width: "0%", backgroundColor: "var(--swiss-accent)" }} />
-                      </div>
-                    </div>
+                    <button
+                      className="planes-start-btn"
+                      onClick={() => setCurrentTab("aula")}
+                    >
+                      Empezar este plan
+                    </button>
                   </div>
                 ))}
               </div>
@@ -2709,11 +2613,27 @@ ${contenidoConsolidado}
                     <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Miembro desde</span>
                     <p className="text-[13px] text-stone-700">Junio 2026</p>
                   </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Autor activo</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginTop: "4px" }}>
+                      {[
+                        { name: "Neville Goddard", status: "activo" },
+                        { name: "Joseph Murphy", status: "próximamente" },
+                        { name: "Emmet Fox", status: "próximamente" },
+                        { name: "Florence Scovel Shinn", status: "próximamente" },
+                      ].map(({ name, status }) => (
+                        <div key={name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: "13px", fontWeight: status === "activo" ? 600 : 400, color: status === "activo" ? "var(--color-dark)" : "var(--color-muted)", fontFamily: "var(--font-base)" }}>{name}</span>
+                          <span style={{ fontSize: "11px", color: status === "activo" ? "var(--color-accent)" : "var(--color-muted)", fontFamily: "var(--font-base)" }}>{status}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                   <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", paddingTop: "8px" }}>
-                    <button className="flux-btn-secondary" style={{ borderRadius: "999px", padding: "8px 14px", fontSize: "11px", fontWeight: 900, display: "flex", alignItems: "center", gap: "6px", border: "2px solid #000" }}>
+                    <button className="flux-btn-secondary" style={{ borderRadius: "999px", padding: "8px 14px", fontSize: "11px", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px", border: "0.5px solid var(--color-border)" }}>
                       <Edit3 size={14} /> Editar nombre
                     </button>
-                    <button onClick={handleSignOut} className="flux-btn-secondary" style={{ borderRadius: "999px", padding: "8px 14px", fontSize: "11px", fontWeight: 900, display: "flex", alignItems: "center", gap: "6px", border: "2px solid #000" }}>
+                    <button onClick={handleSignOut} className="flux-btn-secondary" style={{ borderRadius: "999px", padding: "8px 14px", fontSize: "11px", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px", border: "0.5px solid var(--color-border)" }}>
                       <LogOut size={14} /> Cerrar sesión
                     </button>
                   </div>
@@ -2845,118 +2765,107 @@ ${contenidoConsolidado}
           </div>
         </div>
       )}
-      {/* Mobile Bottom Navigation Bar */}
-      <nav className="flux-mobile-nav" style={{ overflowX: "auto", flexWrap: "nowrap" }}>
+      {/* ── BOTTOM NAV — 5 grupos ── */}
+      {mobileNavGroup && (
+        <div className="nav-submenu-overlay" onClick={() => setMobileNavGroup(null)}>
+          <div className="nav-submenu" onClick={(e) => e.stopPropagation()}>
+            {mobileNavGroup === "conversar" && (<>
+              <div className="nav-submenu-title">Conversar</div>
+              <button onClick={() => { setCurrentTab("aula"); setAgent("profesor"); setChatMode("conversar"); setMobileNavGroup(null); }} className="nav-submenu-item">
+                💬 Coach
+              </button>
+              <button onClick={() => { setCurrentTab("narrador"); setMobileNavGroup(null); }} className="nav-submenu-item">
+                ✨ Narrador
+              </button>
+            </>)}
+            {mobileNavGroup === "estudio" && (<>
+              <div className="nav-submenu-title">Estudio</div>
+              <button onClick={() => { setCurrentTab("testimonios"); setMobileNavGroup(null); }} className="nav-submenu-item">
+                📖 Testimonios y casos
+              </button>
+              <button onClick={() => { setCurrentTab("biblico"); setMobileNavGroup(null); }} className="nav-submenu-item">
+                ✝️ Biblia metafísica
+              </button>
+              <button onClick={() => { setCurrentTab("examenes"); setMobileNavGroup(null); }} className="nav-submenu-item">
+                ❓ Preguntas y respuestas
+              </button>
+              <button onClick={() => { setCurrentTab("biblioteca"); setMobileNavGroup(null); }} className="nav-submenu-item">
+                📚 Fuentes de Neville
+              </button>
+            </>)}
+            {mobileNavGroup === "crear" && (<>
+              <div className="nav-submenu-title">Crear</div>
+              <button onClick={() => { setCurrentTab("libro"); setMobileNavGroup(null); }} className="nav-submenu-item">
+                📕 Mi libro
+              </button>
+              <button onClick={() => { setCurrentTab("planes"); setMobileNavGroup(null); }} className="nav-submenu-item">
+                🗓️ Planes
+              </button>
+              <button onClick={() => { setCurrentTab("telegram"); setMobileNavGroup(null); }} className="nav-submenu-item">
+                ✈️ Telegram
+              </button>
+            </>)}
+            {mobileNavGroup === "mas" && (<>
+              <div className="nav-submenu-title">Personal</div>
+              <button onClick={() => { setCurrentTab("diario"); setMobileNavGroup(null); }} className="nav-submenu-item">
+                📝 Diario íntimo
+              </button>
+              <button onClick={() => { setCurrentTab("notas"); setMobileNavGroup(null); }} className="nav-submenu-item">
+                🗒️ Notas
+              </button>
+              <button onClick={() => { setCurrentTab("memoria"); setMobileNavGroup(null); }} className="nav-submenu-item">
+                🧠 Memoria
+              </button>
+              <button onClick={() => { setCurrentTab("perfil"); setMobileNavGroup(null); }} className="nav-submenu-item">
+                👤 Perfil
+              </button>
+              <button onClick={() => { setCurrentTab("perfil"); setMobileNavGroup(null); }} className="nav-submenu-item nav-submenu-item--accent">
+                ⭐ Mejorar plan
+              </button>
+            </>)}
+          </div>
+        </div>
+      )}
+
+      <nav className="bottom-nav">
         <button
-          onClick={() => setCurrentTab("panel")}
-          className={`flux-mobile-nav__link ${currentTab === "panel" ? "flux-mobile-nav__link--active" : ""}`}
+          onClick={() => { setCurrentTab("panel"); setMobileNavGroup(null); }}
+          className={`nav-item${currentTab === "panel" ? " active" : ""}`}
         >
-          <HomeIcon aria-hidden="true" size={20} />
-          <span>Inicio</span>
+          <HomeIcon size={22} className="nav-icon-svg"/>
+          <span className="nav-label">Inicio</span>
         </button>
 
         <button
-          onClick={() => { setCurrentTab("aula"); setAgent("profesor"); setChatMode("conversar"); }}
-          className={`flux-mobile-nav__link ${currentTab === "aula" ? "flux-mobile-nav__link--active" : ""}`}
+          onClick={() => setMobileNavGroup(mobileNavGroup === "conversar" ? null : "conversar")}
+          className={`nav-item${["aula","narrador"].includes(currentTab) ? " active" : ""}${mobileNavGroup === "conversar" ? " open" : ""}`}
         >
-          <MessageSquareText aria-hidden="true" size={20} />
-          <span>Coach</span>
+          <MessageCircle size={22} className="nav-icon-svg"/>
+          <span className="nav-label">Conversar</span>
         </button>
 
         <button
-          onClick={() => setCurrentTab("narrador")}
-          className={`flux-mobile-nav__link ${currentTab === "narrador" ? "flux-mobile-nav__link--active" : ""}`}
+          onClick={() => setMobileNavGroup(mobileNavGroup === "estudio" ? null : "estudio")}
+          className={`nav-item${["testimonios","biblico","examenes","biblioteca"].includes(currentTab) ? " active" : ""}${mobileNavGroup === "estudio" ? " open" : ""}`}
         >
-          <Sparkles aria-hidden="true" size={20} />
-          <span>Narrador</span>
+          <BookOpen size={22} className="nav-icon-svg"/>
+          <span className="nav-label">Estudio</span>
         </button>
 
         <button
-          onClick={() => setCurrentTab("testimonios")}
-          className={`flux-mobile-nav__link ${currentTab === "testimonios" ? "flux-mobile-nav__link--active" : ""}`}
+          onClick={() => setMobileNavGroup(mobileNavGroup === "crear" ? null : "crear")}
+          className={`nav-item${["libro","planes","telegram"].includes(currentTab) ? " active" : ""}${mobileNavGroup === "crear" ? " open" : ""}`}
         >
-          <ScrollText aria-hidden="true" size={20} />
-          <span>Testimonios</span>
+          <PenLine size={22} className="nav-icon-svg"/>
+          <span className="nav-label">Crear</span>
         </button>
 
         <button
-          onClick={() => setCurrentTab("biblico")}
-          className={`flux-mobile-nav__link ${currentTab === "biblico" ? "flux-mobile-nav__link--active" : ""}`}
+          onClick={() => setMobileNavGroup(mobileNavGroup === "mas" ? null : "mas")}
+          className={`nav-item${["diario","notas","memoria","perfil"].includes(currentTab) ? " active" : ""}${mobileNavGroup === "mas" ? " open" : ""}`}
         >
-          <Cross aria-hidden="true" size={20} />
-          <span>Bíblico</span>
-        </button>
-
-        <button
-          onClick={() => setCurrentTab("examenes")}
-          className={`flux-mobile-nav__link ${currentTab === "examenes" ? "flux-mobile-nav__link--active" : ""}`}
-        >
-          <HelpCircle aria-hidden="true" size={20} />
-          <span>Preguntas</span>
-        </button>
-
-        <button
-          onClick={() => setCurrentTab("libro")}
-          className={`flux-mobile-nav__link ${currentTab === "libro" ? "flux-mobile-nav__link--active" : ""}`}
-        >
-          <BookOpen aria-hidden="true" size={20} />
-          <span>Libro</span>
-        </button>
-
-        <button
-          onClick={() => setCurrentTab("planes")}
-          className={`flux-mobile-nav__link ${currentTab === "planes" ? "flux-mobile-nav__link--active" : ""}`}
-        >
-          <Calendar aria-hidden="true" size={20} />
-          <span>Planes</span>
-        </button>
-
-        <button
-          onClick={() => setCurrentTab("telegram")}
-          className={`flux-mobile-nav__link ${currentTab === "telegram" ? "flux-mobile-nav__link--active" : ""}`}
-        >
-          <Send aria-hidden="true" size={20} />
-          <span>Telegram</span>
-        </button>
-
-        <button
-          onClick={() => setCurrentTab("diario")}
-          className={`flux-mobile-nav__link ${currentTab === "diario" ? "flux-mobile-nav__link--active" : ""}`}
-        >
-          <FileText aria-hidden="true" size={20} />
-          <span>Diario</span>
-        </button>
-
-        <button
-          onClick={() => setCurrentTab("memoria")}
-          className={`flux-mobile-nav__link ${currentTab === "memoria" ? "flux-mobile-nav__link--active" : ""}`}
-        >
-          <History aria-hidden="true" size={20} />
-          <span>Memoria</span>
-        </button>
-
-        <button
-          onClick={() => setCurrentTab("notas")}
-          className={`flux-mobile-nav__link ${currentTab === "notas" ? "flux-mobile-nav__link--active" : ""}`}
-        >
-          <StickyNote aria-hidden="true" size={20} />
-          <span>Notas</span>
-        </button>
-
-        <button
-          onClick={() => setCurrentTab("biblioteca")}
-          className={`flux-mobile-nav__link ${currentTab === "biblioteca" ? "flux-mobile-nav__link--active" : ""}`}
-        >
-          <Library aria-hidden="true" size={20} />
-          <span>Fuentes</span>
-        </button>
-
-        <button
-          onClick={() => setCurrentTab("perfil")}
-          className={`flux-mobile-nav__link ${currentTab === "perfil" ? "flux-mobile-nav__link--active" : ""}`}
-        >
-          <UserCog aria-hidden="true" size={20} />
-          <span>Cuenta</span>
+          <Ellipsis size={22} className="nav-icon-svg"/>
+          <span className="nav-label">Más</span>
         </button>
       </nav>
     </div>

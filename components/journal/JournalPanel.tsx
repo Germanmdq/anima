@@ -117,16 +117,18 @@ export default function JournalPanel({ sendToSection, pendingContext, clearPendi
         <div 
           style={{
             backgroundColor: "var(--swiss-bg)",
-            border: "4px solid var(--swiss-border)",
-            borderRadius: "22px",
+            border: "0.5px solid var(--color-border)",
+            borderRadius: "var(--radius-lg)",
             padding: "24px",
             display: "flex",
             flexDirection: "column",
             gap: "16px",
-            height: "fit-content"
+            height: "fit-content",
+            background: "var(--color-surface)",
+            boxShadow: "var(--shadow-card)"
           }}
         >
-          <h2 style={{ fontSize: "16px", fontWeight: 900, textTransform: "uppercase", color: "var(--swiss-fg)" }}>
+          <h2 style={{ fontSize: "16px", fontWeight: 700, color: "var(--color-dark)", fontFamily: "var(--font-base)", margin: 0 }}>
             Nueva entrada
           </h2>
           <textarea
@@ -137,13 +139,16 @@ export default function JournalPanel({ sendToSection, pendingContext, clearPendi
             style={{
               width: "100%",
               height: "200px",
-              borderRadius: "22px",
+              borderRadius: "var(--radius-md)",
               padding: "16px",
-              fontSize: "13.5px",
+              fontSize: "14px",
               lineHeight: "1.6",
-              backgroundColor: "var(--swiss-muted)",
-              border: "2px solid var(--swiss-border)",
-              resize: "none"
+              backgroundColor: "var(--color-bg)",
+              border: "0.5px solid var(--color-border)",
+              resize: "none",
+              fontFamily: "var(--font-base)",
+              outline: "none",
+              color: "var(--color-dark)"
             }}
           />
           <button
@@ -167,8 +172,8 @@ export default function JournalPanel({ sendToSection, pendingContext, clearPendi
 
         {/* Right column: Chronological list of entries */}
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          <h2 style={{ fontSize: "16px", fontWeight: 900, textTransform: "uppercase", color: "var(--swiss-fg)", marginBottom: "4px" }}>
-            Historial de Estados ({entries.length})
+          <h2 style={{ fontSize: "16px", fontWeight: 700, color: "var(--color-dark)", fontFamily: "var(--font-base)", marginBottom: "4px" }}>
+            Historial ({entries.length})
           </h2>
           
           {entries.length === 0 ? (
@@ -192,17 +197,18 @@ export default function JournalPanel({ sendToSection, pendingContext, clearPendi
                 <div 
                   key={entry.id}
                   style={{
-                    backgroundColor: "var(--swiss-bg)",
-                    border: "3px solid var(--swiss-border)",
-                    borderRadius: "22px",
+                    backgroundColor: "var(--color-surface)",
+                    border: "0.5px solid var(--color-border)",
+                    borderRadius: "var(--radius-lg)",
                     padding: "20px",
                     display: "flex",
                     flexDirection: "column",
-                    gap: "14px"
+                    gap: "14px",
+                    boxShadow: "var(--shadow-card)"
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid var(--swiss-border)", paddingBottom: "8px" }}>
-                    <span style={{ fontSize: "11px", fontWeight: 900, color: "var(--swiss-accent)", textTransform: "uppercase" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "0.5px solid var(--color-border)", paddingBottom: "8px" }}>
+                    <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-muted)", fontFamily: "var(--font-base)" }}>
                       {entry.date}
                     </span>
                     <button 
@@ -219,40 +225,40 @@ export default function JournalPanel({ sendToSection, pendingContext, clearPendi
                   </p>
 
                   {/* Interoperability actions */}
-                  <div style={{ borderTop: "2px solid var(--swiss-border)", paddingTop: "12px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                    <button 
+                  <div style={{ borderTop: "0.5px solid var(--color-border)", paddingTop: "12px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                    <button
                       onClick={() => handleAction("aula", entry)}
-                      style={{ padding: "4px 8px", fontSize: "10px", fontWeight: 900, textTransform: "uppercase", borderRadius: "999px", border: "1.5px solid #000", cursor: "pointer", backgroundColor: "var(--swiss-muted)" }}
+                      className="coach-quick-btn"
                     >
                       Trabajar con Coach
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleAction("libro", entry)}
-                      style={{ padding: "4px 8px", fontSize: "10px", fontWeight: 900, textTransform: "uppercase", borderRadius: "999px", border: "1.5px solid #000", cursor: "pointer", backgroundColor: "var(--swiss-muted)" }}
+                      className="coach-quick-btn"
                     >
                       Convertir en capítulo
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleAction("examenes", entry)}
-                      style={{ padding: "4px 8px", fontSize: "10px", fontWeight: 900, textTransform: "uppercase", borderRadius: "999px", border: "1.5px solid #000", cursor: "pointer", backgroundColor: "var(--swiss-muted)" }}
+                      className="coach-quick-btn"
                     >
                       Generar preguntas
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleAction("planes", entry)}
-                      style={{ padding: "4px 8px", fontSize: "10px", fontWeight: 900, textTransform: "uppercase", borderRadius: "999px", border: "1.5px solid #000", cursor: "pointer", backgroundColor: "var(--swiss-muted)" }}
+                      className="coach-quick-btn"
                     >
                       Crear plan
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleAction("telegram", entry)}
-                      style={{ padding: "4px 8px", fontSize: "10px", fontWeight: 900, textTransform: "uppercase", borderRadius: "999px", border: "1.5px solid #000", cursor: "pointer", backgroundColor: "var(--swiss-muted)" }}
+                      className="coach-quick-btn"
                     >
                       Enviar a Telegram
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleAction("memoria", entry)}
-                      style={{ padding: "4px 8px", fontSize: "10px", fontWeight: 900, textTransform: "uppercase", borderRadius: "999px", border: "1.5px solid #000", cursor: "pointer", backgroundColor: "var(--swiss-muted)" }}
+                      className="coach-quick-btn"
                     >
                       Guardar en Memoria
                     </button>
