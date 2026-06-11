@@ -2575,120 +2575,87 @@ ${contenidoConsolidado}
 
         {/* 8. PERFIL */}
         {currentTab === "perfil" && (
-          <div>
-            <header className="content-header" style={{ marginBottom: "20px" }}>
-              <h2 className="flux-title" style={{ fontSize: "20px" }}>Perfil / Cuenta</h2>
-              <p className="flux-subtitle">Tu cuenta en {BRAND_NAME}.</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px", maxWidth: "760px" }}>
+            <header>
+              <h2 style={{ fontSize: "20px", fontWeight: 700, margin: "0 0 2px", fontFamily: "var(--font-base)", color: "var(--color-text)" }}>Tu cuenta</h2>
+              <p style={{ fontSize: "14px", color: "var(--color-text-muted)", margin: 0, fontFamily: "var(--font-base)" }}>{BRAND_NAME} · {planLabel}</p>
             </header>
 
-            <div className="flux-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
-              {/* Info personal */}
-              <div className="flux-card">
-                <div className="flux-card__header">
-                  <span className="flux-card__title">
-                    <UserRound aria-hidden="true" />
-                    Información
-                  </span>
+            {/* Fila 1: Info + Estadísticas */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+              {/* Info */}
+              <div style={{ background: "var(--color-bg-elevated)", border: "0.5px solid var(--color-border)", borderRadius: "var(--radius-lg)", padding: "20px", display: "flex", flexDirection: "column", gap: "14px", boxShadow: "var(--shadow-card)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <UserRound size={14} style={{ color: "var(--color-accent)", flexShrink: 0 }} />
+                  <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-text-muted)", fontFamily: "var(--font-base)" }}>Información</span>
                 </div>
-                <div style={{ padding: "12px 0", display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <div>
-                    <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Nombre</span>
-                    <p className="text-[13px] font-bold text-stone-900">
-                      {displayName}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Email</span>
-                    <p className="text-[13px] text-stone-700">{currentUser?.email || "Sin sesión"}</p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Plan actual</span>
-                    <p className="text-[13px] font-bold text-stone-900">{planLabel}</p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Estado de suscripción</span>
-                    <p className="text-[13px] text-stone-700">{subscriptionStatus}</p>
-                  </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {[
+                    { label: "Nombre", value: displayName },
+                    { label: "Email", value: currentUser?.email || "Sin sesión" },
+                    { label: "Plan", value: planLabel },
+                    { label: "Estado", value: subscriptionStatus },
+                    { label: "Miembro desde", value: "Junio 2026" },
+                  ].map(({ label, value }) => (
+                    <div key={label}>
+                      <span style={{ fontSize: "10px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-text-subtle)", fontFamily: "var(--font-base)" }}>{label}</span>
+                      <p style={{ fontSize: "13px", fontWeight: 500, color: "var(--color-text)", fontFamily: "var(--font-base)", margin: "2px 0 0" }}>{value}</p>
+                    </div>
+                  ))}
                   {isAdminUser && (
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                      <span className="flux-class-badge" style={{ backgroundColor: "#000", color: "#fff" }}>Administrador</span>
-                      <span className="flux-class-badge" style={{ backgroundColor: "var(--swiss-accent)", color: "#fff" }}>Plan fundador</span>
+                    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                      <span className="flux-class-badge" style={{ background: "var(--color-bg-overlay)", color: "var(--color-text)", border: "0.5px solid var(--color-border)" }}>Administrador</span>
+                      <span className="flux-class-badge" style={{ background: "var(--color-accent)", color: "#fff" }}>Plan fundador</span>
                     </div>
                   )}
-                  <div>
-                    <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Miembro desde</span>
-                    <p className="text-[13px] text-stone-700">Junio 2026</p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Autor activo</span>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginTop: "4px" }}>
-                      {[
-                        { name: "Neville Goddard", status: "activo" },
-                        { name: "Joseph Murphy", status: "próximamente" },
-                        { name: "Emmet Fox", status: "próximamente" },
-                        { name: "Florence Scovel Shinn", status: "próximamente" },
-                      ].map(({ name, status }) => (
-                        <div key={name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontSize: "13px", fontWeight: status === "activo" ? 600 : 400, color: status === "activo" ? "var(--color-dark)" : "var(--color-muted)", fontFamily: "var(--font-base)" }}>{name}</span>
-                          <span style={{ fontSize: "11px", color: status === "activo" ? "var(--color-accent)" : "var(--color-muted)", fontFamily: "var(--font-base)" }}>{status}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", paddingTop: "8px" }}>
-                    <button className="flux-btn-secondary" style={{ borderRadius: "999px", padding: "8px 14px", fontSize: "11px", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px", border: "0.5px solid var(--color-border)" }}>
-                      <Edit3 size={14} /> Editar nombre
-                    </button>
-                    <button onClick={handleSignOut} className="flux-btn-secondary" style={{ borderRadius: "999px", padding: "8px 14px", fontSize: "11px", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px", border: "0.5px solid var(--color-border)" }}>
-                      <LogOut size={14} /> Cerrar sesión
-                    </button>
-                  </div>
+                </div>
+                <div style={{ borderTop: "0.5px solid var(--color-border)", paddingTop: "12px" }}>
+                  <button className="flux-btn-secondary" style={{ borderRadius: "999px", padding: "8px 14px", fontSize: "11px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "6px", border: "0.5px solid var(--color-border)" }}>
+                    <Edit3 size={13} /> Editar nombre
+                  </button>
                 </div>
               </div>
 
               {/* Estadísticas */}
-              <div className="flux-card">
-                <div className="flux-card__header">
-                  <span className="flux-card__title">
-                    <Activity aria-hidden="true" />
-                    Estadísticas
-                  </span>
+              <div style={{ background: "var(--color-bg-elevated)", border: "0.5px solid var(--color-border)", borderRadius: "var(--radius-lg)", padding: "20px", display: "flex", flexDirection: "column", gap: "14px", boxShadow: "var(--shadow-card)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <Activity size={14} style={{ color: "var(--color-accent)", flexShrink: 0 }} />
+                  <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-text-muted)", fontFamily: "var(--font-base)" }}>Estadísticas</span>
                 </div>
-                <div style={{ padding: "12px 0", display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <div>
-                    <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Consultas</span>
-                    <p className="text-[13px] font-bold text-stone-900">{questionsCount} / 200 este mes</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {[
+                    { label: "Consultas este mes", value: `${questionsCount} / 200` },
+                    { label: "Exámenes rendidos", value: `${memoriaExams.length}` },
+                    { label: "Libros compilados", value: `${memoriaBooks.length}` },
+                    { label: "Textos en archivo", value: "621" },
+                  ].map(({ label, value }) => (
+                    <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: "13px", color: "var(--color-text-muted)", fontFamily: "var(--font-base)" }}>{label}</span>
+                      <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--color-text)", fontFamily: "var(--font-base)" }}>{value}</span>
+                    </div>
+                  ))}
+                </div>
+                {/* Barra de consultas */}
+                <div style={{ borderTop: "0.5px solid var(--color-border)", paddingTop: "12px" }}>
+                  <div style={{ height: "4px", background: "var(--color-bg-overlay)", borderRadius: "100px", overflow: "hidden" }}>
+                    <div style={{ height: "100%", background: "var(--color-accent)", borderRadius: "100px", width: `${Math.min(100, (questionsCount / 200) * 100)}%`, transition: "width 0.3s" }} />
                   </div>
-                  <div>
-                    <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Consultas usadas / límite</span>
-                    <p className="text-[13px] font-bold text-stone-900">{questionsCount} usadas · límite 200</p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Exámenes rendidos</span>
-                    <p className="text-[13px] font-bold text-stone-900">{memoriaExams.length}</p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Libros compilados</span>
-                    <p className="text-[13px] font-bold text-stone-900">{memoriaBooks.length}</p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Textos en archivo</span>
-                    <p className="text-[13px] font-bold text-stone-900">621</p>
-                  </div>
+                  <p style={{ fontSize: "11px", color: "var(--color-text-subtle)", fontFamily: "var(--font-base)", margin: "6px 0 0" }}>{questionsCount} de 200 consultas usadas</p>
                 </div>
               </div>
+            </div>
 
+            {/* Fila 2: Configuración + Plan */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
               {/* Configuración */}
-              <div className="flux-card" style={{ gridColumn: "1 / -1" }}>
-                <div className="flux-card__header">
-                  <span className="flux-card__title">
-                    <UserCog aria-hidden="true" />
-                    Configuración
-                  </span>
+              <div style={{ background: "var(--color-bg-elevated)", border: "0.5px solid var(--color-border)", borderRadius: "var(--radius-lg)", padding: "20px", display: "flex", flexDirection: "column", gap: "14px", boxShadow: "var(--shadow-card)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <UserCog size={14} style={{ color: "var(--color-accent)", flexShrink: 0 }} />
+                  <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-text-muted)", fontFamily: "var(--font-base)" }}>Configuración</span>
                 </div>
-                <div style={{ padding: "12px 0", display: "flex", flexDirection: "column", gap: "14px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span className="text-[12px] font-bold text-stone-900">Agente por defecto</span>
+                    <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--color-text)", fontFamily: "var(--font-base)" }}>Agente por defecto</span>
                     <select
                       value={agent}
                       onChange={(e) => setAgent(e.target.value as AgenteId)}
@@ -2700,7 +2667,7 @@ ${contenidoConsolidado}
                     </select>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span className="text-[12px] font-bold text-stone-900">Memoria activa</span>
+                    <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--color-text)", fontFamily: "var(--font-base)" }}>Memoria activa</span>
                     <button
                       type="button"
                       onClick={() => setUseMemory((v) => !v)}
@@ -2711,6 +2678,33 @@ ${contenidoConsolidado}
                     </button>
                   </div>
                 </div>
+                <div style={{ borderTop: "0.5px solid var(--color-border)", paddingTop: "12px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ fontSize: "10px", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: "var(--color-text-subtle)", fontFamily: "var(--font-base)" }}>Autor activo</span>
+                  </div>
+                  <div style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--color-text)", fontFamily: "var(--font-base)" }}>Neville Goddard</span>
+                    <span style={{ fontSize: "11px", color: "var(--color-accent)", fontFamily: "var(--font-base)" }}>activo</span>
+                  </div>
+                  <p style={{ fontSize: "12px", color: "var(--color-text-subtle)", fontFamily: "var(--font-base)", margin: "6px 0 0" }}>Murphy, Emmet Fox y Shinn · próximamente</p>
+                </div>
+              </div>
+
+              {/* Plan / Upgrade */}
+              <div style={{ background: "var(--color-bg-elevated)", border: "0.5px solid var(--color-border)", borderRadius: "var(--radius-lg)", padding: "20px", display: "flex", flexDirection: "column", gap: "14px", boxShadow: "var(--shadow-card)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <Trophy size={14} style={{ color: "var(--color-accent)", flexShrink: 0 }} />
+                  <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-text-muted)", fontFamily: "var(--font-base)" }}>Plan</span>
+                </div>
+                <div>
+                  <p style={{ fontSize: "16px", fontWeight: 700, color: "var(--color-text)", fontFamily: "var(--font-base)", margin: "0 0 4px" }}>{planLabel}</p>
+                  <p style={{ fontSize: "13px", color: "var(--color-text-muted)", fontFamily: "var(--font-base)", margin: 0, lineHeight: 1.5 }}>Acceso a Coach, Narrador, Biblia metafísica, Planes guiados y todas las herramientas activas.</p>
+                </div>
+                <button
+                  style={{ background: "var(--color-accent)", color: "#fff", border: "none", borderRadius: "var(--radius-md)", padding: "12px 16px", fontSize: "14px", fontWeight: 600, fontFamily: "var(--font-base)", cursor: "pointer", width: "100%", textAlign: "center" }}
+                >
+                  Mejorar plan
+                </button>
               </div>
             </div>
           </div>
