@@ -1,49 +1,71 @@
 /* ═══════════════════════════════════════════════════════════
-   Universidad de la Imaginación — Flux Dashboard Design System
+   Odiseo Design System — Dark Theme
    ═══════════════════════════════════════════════════════════ */
 
 :root {
-  /* Swiss International Typographic Style Tokens */
-  --swiss-bg: #FFFFFF;
-  --swiss-fg: #000000;
-  --swiss-muted: #F2F2F2;
-  --swiss-accent: #FF3000; /* Swiss Red */
-  --swiss-border: #000000;
-  --swiss-text-muted: #86868B;
-  --radius-xs: 6px;
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
-  --radius-pill: 999px;
-  
-  /* Retain flux names as fallbacks pointing to Swiss tokens for backward compatibility */
-  --flux-lime: var(--swiss-accent);
-  --flux-lime-bg: #FFEBE6;
-  --flux-lime-text: var(--swiss-accent);
-  --flux-lavender: #E6EBFF;
-  --flux-dark-sidebar: var(--swiss-muted);
-  --flux-dark-container: var(--swiss-bg);
-  --flux-card-dark: var(--swiss-muted);
-  --flux-grey-bg: var(--swiss-bg);
-  --flux-text-muted: var(--swiss-text-muted);
+  /* ── Fondos oscuros con jerarquía ── */
+  --color-bg:           #0a0a0d;   /* fondo base */
+  --color-bg-elevated:  #14141a;   /* cards, paneles, sidebar */
+  --color-bg-raised:    #1e1e26;   /* elementos sobre cards */
+  --color-bg-overlay:   #2a2a35;   /* hover states, activos */
 
-  /* ── Odiseo Design System v2 ── */
-  --color-bg:      #f2f2f7;
-  --color-surface: #ffffff;
-  --color-accent:  #E8401A;
-  --color-dark:    #1d1d1f;
-  --color-muted:   #8e8e93;
-  --color-border:  rgba(0, 0, 0, 0.08);
+  /* ── Texto ── */
+  --color-text:         #f5f5f7;
+  --color-text-muted:   #a1a1aa;
+  --color-text-subtle:  #71717a;
 
+  /* ── Bordes ── */
+  --color-border:        rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(255, 255, 255, 0.15);
+
+  /* ── Acento principal ── */
+  --color-accent:       #E8401A;
+  --color-accent-soft:  rgba(232, 64, 26, 0.12);
+  --color-accent-hover: #ff5429;
+  --color-accent-glow:  rgba(232, 64, 26, 0.4);
+
+  /* ── Aliases backward-compat ── */
+  --color-surface: var(--color-bg-elevated);
+  --color-dark:    var(--color-text);
+  --color-muted:   var(--color-text-muted);
+
+  /* ── Legacy Swiss/Flux tokens (usados en componentes viejos) ── */
+  --swiss-bg:          var(--color-bg-elevated);
+  --swiss-fg:          var(--color-text);
+  --swiss-muted:       var(--color-bg-raised);
+  --swiss-accent:      #E8401A;
+  --swiss-border:      var(--color-border-strong);
+  --swiss-text-muted:  var(--color-text-muted);
+  --flux-lime:         var(--color-accent);
+  --flux-lime-bg:      var(--color-accent-soft);
+  --flux-lime-text:    var(--color-accent);
+  --flux-lavender:     var(--color-bg-overlay);
+  --flux-dark-sidebar: var(--color-bg-elevated);
+  --flux-dark-container: var(--color-bg-elevated);
+  --flux-card-dark:    var(--color-bg-raised);
+  --flux-grey-bg:      var(--color-bg);
+  --flux-text-muted:   var(--color-text-muted);
+
+  /* ── Tipografía ── */
   --font-base: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
 
-  --radius-sm:  10px;
-  --radius-md:  14px;
-  --radius-lg:  18px;
-  --radius-xl:  20px;
+  /* ── Radios ── */
+  --radius-xs:   6px;
+  --radius-sm:   10px;
+  --radius-md:   14px;
+  --radius-lg:   18px;
+  --radius-xl:   20px;
+  --radius-pill: 999px;
 
-  --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.06);
+  /* ── Sombras dark ── */
+  --shadow-card:
+    0 1px 3px rgba(0, 0, 0, 0.4),
+    0 8px 24px rgba(0, 0, 0, 0.3);
+  --shadow-card-hover:
+    0 2px 6px rgba(0, 0, 0, 0.5),
+    0 16px 40px rgba(0, 0, 0, 0.4);
+  --shadow-accent:
+    0 0 24px rgba(232, 64, 26, 0.25);
 }
 
 /* ── Reset ── */
@@ -130,18 +152,20 @@
 body {
   margin: 0;
   padding: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-base);
   background: var(--color-bg);
+  color: var(--color-text);
   width: 100%;
   min-height: 100vh;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
-  color: var(--swiss-fg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Cards deeper shadow + radius on mobile (step 8) ── */
+/* ── Cards dark shadow on mobile ── */
 @media (max-width: 860px) {
   .dash-tool-card,
   .ods-mobile-card,
@@ -151,29 +175,32 @@ body {
   .plan-card,
   .plan-row,
   .book-card {
-    border: none !important;
     border-radius: 18px !important;
-    box-shadow:
-      0 1px 3px rgba(0,0,0,0.04),
-      0 6px 16px rgba(0,0,0,0.08),
-      0 20px 48px rgba(0,0,0,0.05) !important;
+    box-shadow: var(--shadow-card) !important;
+    border: 0.5px solid var(--color-border) !important;
   }
 }
 
 /* ── Inputs & textareas native feel (step 7) ── */
+input, textarea, select {
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+input::placeholder, textarea::placeholder, select::placeholder {
+  color: var(--color-text-subtle);
+}
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
 @media (max-width: 860px) {
   input, textarea, select {
-    font-size: 16px !important; /* iOS: prevents zoom on focus */
+    font-size: 16px !important;
     -webkit-appearance: none;
     border-radius: 12px;
-    border: 1px solid rgba(0,0,0,0.12);
-    background: #fff;
-    transition: border-color 200ms ease, box-shadow 200ms ease;
-  }
-  input:focus, textarea:focus, select:focus {
-    outline: none;
-    border-color: #E8401A;
-    box-shadow: 0 0 0 3px rgba(232, 64, 26, 0.12);
   }
 }
 
@@ -213,9 +240,9 @@ html {
 .skeleton-line {
   background: linear-gradient(
     90deg,
-    rgba(0,0,0,0.05) 0%,
-    rgba(0,0,0,0.10) 50%,
-    rgba(0,0,0,0.05) 100%
+    var(--color-bg-raised) 0%,
+    var(--color-bg-overlay) 50%,
+    var(--color-bg-raised) 100%
   );
   background-size: 200% 100%;
   border-radius: 6px;
@@ -223,7 +250,8 @@ html {
 }
 
 .skeleton-card {
-  background: #fff;
+  background: var(--color-bg-elevated);
+  border: 0.5px solid var(--color-border);
   border-radius: 16px;
   padding: 18px 20px;
   display: flex;
@@ -286,7 +314,7 @@ html {
   width: 32px;
   height: 32px;
   background-color: var(--swiss-accent);
-  border: 2px solid var(--swiss-border);
+  border: 1px solid var(--color-border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -337,7 +365,7 @@ html {
 .flux-nav__link--active {
   background: var(--swiss-fg) !important;
   color: var(--swiss-bg) !important;
-  border: 2px solid var(--swiss-border) !important;
+  border: 1px solid var(--color-border) !important;
   opacity: 1;
 }
 
@@ -360,7 +388,7 @@ html {
 /* Upgrade to Pro Card */
 .flux-upgrade-card {
   background: var(--swiss-bg);
-  border: 2px solid var(--swiss-border);
+  border: 1px solid var(--color-border);
   /* Apply Swiss Diagonal Pattern */
   background-size: 10px 10px;
   background-image: repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.015), rgba(0, 0, 0, 0.015) 1px, transparent 1px, transparent 6px);
@@ -393,7 +421,7 @@ html {
 .flux-upgrade-card__button {
   background: var(--swiss-fg);
   color: var(--swiss-bg);
-  border: 2px solid var(--swiss-border);
+  border: 1px solid var(--color-border);
   padding: 10px 14px;
   font-size: 11px;
   font-weight: 700;
@@ -459,7 +487,7 @@ html {
 .flux-profile__name {
   font-size: 13px;
   font-weight: 700;
-  color: #131313;
+  color: var(--color-text);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -471,7 +499,7 @@ html {
 }
 
 .flux-search-bar {
-  background: #FFFFFF;
+  background: var(--color-bg-elevated);
   border-radius: 12px;
   padding: 6px 14px;
   display: flex;
@@ -479,7 +507,7 @@ html {
   gap: 8px;
   width: 220px;
   height: 32px;
-  border: 1px solid rgba(220, 220, 225, 0.6);
+  border: 1px solid var(--color-border);
   box-shadow: 0 1px 3px rgba(0,0,0,0.02);
 }
 
@@ -494,7 +522,7 @@ html {
   border: none;
   outline: none;
   font-size: 12px;
-  color: #131313;
+  color: var(--color-text);
   width: 100%;
   background: transparent;
 }
@@ -513,12 +541,12 @@ html {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #FFFFFF;
-  border: 1px solid rgba(220, 220, 225, 0.6);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #131313;
+  color: var(--color-text);
   cursor: pointer;
   position: relative;
   box-shadow: 0 1px 3px rgba(0,0,0,0.02);
@@ -552,7 +580,7 @@ html {
   font-family: var(--font-body);
   font-size: 28px;
   font-weight: 800;
-  color: #131313;
+  color: var(--color-text);
   letter-spacing: -0.02em;
 }
 
@@ -572,10 +600,10 @@ html {
 }
 
 .flux-dropdown-pill {
-  background: #FFFFFF;
+  background: var(--color-bg-elevated);
   border-radius: 14px;
   padding: 6px 12px;
-  color: #131313;
+  color: var(--color-text);
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -594,7 +622,7 @@ html {
 
 /* Flux Card Base */
 .flux-card {
-  background: #FFFFFF;
+  background: var(--color-bg-elevated);
   border-radius: 20px;
   padding: 20px;
   display: flex;
@@ -742,7 +770,7 @@ html {
 
 .flux-progress-item__val {
   font-weight: 700;
-  color: #131313;
+  color: var(--color-text);
   width: 28px;
 }
 
@@ -778,7 +806,7 @@ html {
 .flux-btn-primary {
   background: var(--swiss-fg);
   color: var(--swiss-bg);
-  border: 2px solid var(--swiss-border);
+  border: 1px solid var(--color-border);
   padding: 12px 20px;
   font-size: 12px;
   font-weight: 700;
@@ -803,7 +831,7 @@ html {
 .flux-btn-secondary {
   background: var(--swiss-bg);
   color: var(--swiss-fg);
-  border: 2px solid var(--swiss-border);
+  border: 1px solid var(--color-border);
   padding: 10px 16px;
   font-size: 11px;
   font-weight: 700;
@@ -917,7 +945,7 @@ html {
 
 .flux-compiler-btn {
   background: var(--flux-lime);
-  color: #131313;
+  color: var(--color-text);
   font-size: 11px;
   font-weight: 700;
   border: none;
@@ -931,17 +959,17 @@ html {
   display: flex;
   flex-direction: column;
   height: calc(100% - 60px);
-  background: #FFFFFF;
+  background: var(--color-bg-elevated);
   border-radius: 24px;
-  border: 1px solid rgba(220, 220, 225, 0.6);
+  border: 1px solid var(--color-border);
   overflow: hidden;
   box-shadow: 0 1px 6px rgba(0,0,0,0.02);
 }
 
 .flux-chat-header {
   padding: 16px 24px;
-  border-bottom: 1px solid var(--border-subtle);
-  background: #FCFCFE;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -952,7 +980,7 @@ html {
   font-size: 20px;
   line-height: 1;
   font-weight: 900;
-  color: #131313;
+  color: var(--color-text);
   letter-spacing: 0;
 }
 
@@ -976,7 +1004,7 @@ html {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border: 2px solid var(--swiss-border);
+  border: 1px solid var(--color-border);
   background: var(--swiss-bg);
   color: var(--swiss-fg);
   cursor: pointer;
@@ -990,9 +1018,9 @@ html {
 }
 
 .flux-chat-btn--active {
-  background: var(--swiss-fg);
-  color: var(--swiss-bg);
-  border-color: var(--swiss-border);
+  background: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-accent);
 }
 
 .flux-chat-command-bar {
@@ -1001,8 +1029,8 @@ html {
   justify-content: space-between;
   gap: 16px;
   padding: 14px 24px;
-  border-bottom: 1px solid var(--border-subtle);
-  background: #FFFFFF;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
 }
 
 .flux-memory-control,
@@ -1025,9 +1053,9 @@ html {
   width: 44px;
   height: 24px;
   padding: 2px;
-  border: 2px solid var(--swiss-border);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
-  background: #FFFFFF;
+  background: var(--color-bg-elevated);
   cursor: pointer;
 }
 
@@ -1035,7 +1063,7 @@ html {
   display: block;
   width: 16px;
   height: 16px;
-  background: var(--swiss-fg);
+  background: var(--color-text-muted);
   border-radius: 50%;
   transition: transform 0.15s ease;
 }
@@ -1056,9 +1084,9 @@ html {
 
 .flux-mode-select {
   min-width: 150px;
-  border: 2px solid var(--swiss-border);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
-  background: #FFFFFF;
+  background: var(--color-bg-elevated);
   color: var(--swiss-fg);
   padding: 8px 36px 8px 12px;
   font-size: 12px;
@@ -1076,7 +1104,7 @@ html {
 
 .flux-chat-context-banner {
   background: var(--flux-lime-bg);
-  border-bottom: 1px solid rgba(0,66,37,0.05);
+  border-bottom: 1px solid var(--color-border);
   padding: 8px 24px;
   font-size: 11px;
   color: var(--flux-lime-text);
@@ -1102,7 +1130,7 @@ html {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  background: #FAFAFA;
+  background: var(--color-bg);
 }
 
 .flux-chat-empty {
@@ -1138,7 +1166,7 @@ html {
 }
 
 .flux-chat-empty__copy p {
-  color: #55555A;
+  color: var(--color-text-muted);
   font-size: 14px;
   line-height: 1.55;
 }
@@ -1152,9 +1180,9 @@ html {
 .flux-chat-action-card {
   min-height: 112px;
   padding: 18px;
-  border: 2px solid var(--swiss-border);
+  border: 1px solid var(--color-border);
   border-radius: 18px;
-  background: #FFFFFF;
+  background: var(--color-bg-elevated);
   color: var(--swiss-fg);
   text-align: left;
   cursor: pointer;
@@ -1192,17 +1220,17 @@ html {
 }
 
 .flux-bubble--user {
-  background: #131313;
-  color: #FFFFFF;
+  background: var(--color-accent);
+  color: #fff;
   align-self: flex-end;
 }
 
 .flux-bubble--agent {
-  background: #FFFFFF;
-  color: #131313;
-  border: 1px solid #E8E8ED;
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+  border: 0.5px solid var(--color-border);
   align-self: flex-start;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.01);
+  box-shadow: var(--shadow-card);
 }
 
 .flux-bubble--agent p {
@@ -1213,7 +1241,7 @@ html {
 }
 
 .flux-bubble--agent strong {
-  color: var(--swiss-fg);
+  color: var(--color-text);
   font-weight: 700;
 }
 
@@ -1223,16 +1251,16 @@ html {
 }
 
 .flux-bubble--agent blockquote {
-  border-left: 4px solid var(--swiss-accent);
-  background: var(--swiss-muted);
+  border-left: 4px solid var(--color-accent);
+  background: var(--color-bg-raised);
   padding: 10px 14px;
   margin: 10px 0;
-  color: var(--swiss-fg);
+  color: var(--color-text-muted);
   font-style: italic;
 }
 
 .flux-bubble--agent code {
-  background: #F5F5F7;
+  background: var(--color-bg-raised);
   color: var(--danger);
   padding: 2px 4px;
   border-radius: 4px;
@@ -1251,16 +1279,16 @@ html {
 
 .flux-chat-input-area {
   padding: 14px 20px;
-  background: #FFFFFF;
-  border-top: 1px solid #E8E8ED;
+  background: var(--color-bg-elevated);
+  border-top: 1px solid var(--color-border);
 }
 
 .flux-chat-input-container {
   display: flex;
   align-items: flex-end;
   gap: 10px;
-  background: #F5F5F7;
-  border: 1px solid #E8E8ED;
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-border);
   border-radius: 18px;
   padding: 4px 4px 4px 14px;
 }
@@ -1276,7 +1304,7 @@ html {
   resize: none;
   max-height: 80px;
   padding: 8px 0;
-  color: #131313;
+  color: var(--color-text);
 }
 
 .flux-chat-send-btn {
@@ -1284,8 +1312,8 @@ html {
   height: 28px;
   border-radius: 50%;
   border: none;
-  background: #131313;
-  color: #FFFFFF;
+  background: var(--color-accent);
+  color: #fff;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1334,8 +1362,8 @@ html {
 }
 
 .flux-class-card {
-  background: #FFFFFF;
-  border: 1px solid rgba(220, 220, 225, 0.6);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
   border-radius: 24px;
   padding: 20px;
   display: flex;
@@ -1354,7 +1382,7 @@ html {
 .flux-class-title {
   font-size: 13.5px;
   font-weight: 700;
-  color: #131313;
+  color: var(--color-text);
   line-height: 1.4;
 }
 
@@ -1367,7 +1395,7 @@ html {
 }
 
 .flux-class-badge {
-  background: #F5F5F7;
+  background: var(--color-bg-raised);
   padding: 2px 6px;
   border-radius: 4px;
 }
@@ -1386,7 +1414,7 @@ html {
 }
 
 .flux-modal-content {
-  background: #FFFFFF;
+  background: var(--color-bg-elevated);
   border-radius: 24px;
   width: 100%;
   max-width: 720px;
@@ -1400,7 +1428,7 @@ html {
 .flux-modal-header {
   padding: 18px 24px;
   border-bottom: 1px solid #E8E8ED;
-  background: #FCFCFE;
+  background: var(--color-bg-elevated);
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -1409,7 +1437,7 @@ html {
 .flux-modal-title {
   font-size: 16px;
   font-weight: 700;
-  color: #131313;
+  color: var(--color-text);
 }
 
 .flux-modal-body {
@@ -1434,8 +1462,8 @@ html {
 
 .flux-modal-footer {
   padding: 16px 24px;
-  border-top: 1px solid #E8E8ED;
-  background: #FCFCFE;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
   display: flex;
   justify-content: flex-end;
   gap: 12px;
@@ -1443,7 +1471,7 @@ html {
 
 /* Exam Panel (mismo estilo visual que flux-card) */
 .flux-exam-container {
-  background: #FFFFFF;
+  background: var(--color-bg-elevated);
   border-radius: 20px;
   border: 1.5px solid rgba(0, 0, 0, 0.08);
   padding: 20px;
@@ -1460,7 +1488,7 @@ html {
 .flux-exam-title {
   font-size: 16px;
   font-weight: 700;
-  color: #131313;
+  color: var(--color-text);
   margin-bottom: 4px;
 }
 
@@ -1475,8 +1503,8 @@ html {
   width: 100%;
   text-align: left;
   padding: 12px 16px;
-  background: #FFFFFF;
-  border: 1px solid #E8E8ED;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   margin-bottom: 8px;
   cursor: pointer;
@@ -1486,7 +1514,7 @@ html {
 }
 
 .flux-exam-option:hover {
-  background: #F5F5F7;
+  background: var(--color-bg-raised);
 }
 
 .flux-exam-option--selected {
@@ -1498,7 +1526,7 @@ html {
 
 /* ── Library Search Bar ── */
 .library-search {
-  background: #FFFFFF;
+  background: var(--color-bg-elevated);
   border-radius: 12px;
   padding: 6px 14px;
   display: flex;
@@ -1507,7 +1535,7 @@ html {
   width: 100%;
   max-width: 440px;
   height: 32px;
-  border: 1px solid rgba(220, 220, 225, 0.6);
+  border: 1px solid var(--color-border);
   box-shadow: 0 1px 3px rgba(0,0,0,0.02);
 }
 
@@ -1522,7 +1550,7 @@ html {
   border: none;
   outline: none;
   font-size: 12px;
-  color: #131313;
+  color: var(--color-text);
   width: 100%;
   background: transparent;
 }
@@ -1566,7 +1594,7 @@ html {
   width: 24px;
   height: 24px;
   background-color: var(--swiss-accent);
-  border: 2px solid var(--swiss-border);
+  border: 1px solid var(--color-border);
 }
 
 .swiss-landing-nav {
@@ -1593,7 +1621,7 @@ html {
 .swiss-landing-cta {
   background: var(--swiss-accent);
   color: #FFFFFF;
-  border: 2px solid var(--swiss-border);
+  border: 1px solid var(--color-border);
   padding: 12px 24px;
   font-size: 11px;
   font-weight: 700;
@@ -1666,7 +1694,7 @@ html {
   align-self: flex-start;
   background: var(--swiss-fg);
   color: var(--swiss-bg);
-  border: 2px solid var(--swiss-border);
+  border: 1px solid var(--color-border);
   padding: 16px 32px;
   font-size: 13px;
   font-weight: 700;
@@ -2403,7 +2431,7 @@ html {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   padding: 4px 8px;
-  border: 2px solid var(--swiss-border);
+  border: 1px solid var(--color-border);
 }
 
 .swiss-pricing-tier {
@@ -2468,7 +2496,7 @@ html {
   width: 100%;
   background-color: var(--swiss-fg);
   color: var(--swiss-bg);
-  border: 2px solid var(--swiss-border);
+  border: 1px solid var(--color-border);
   padding: 16px;
   font-size: 12px;
   font-weight: 900;
@@ -2803,7 +2831,7 @@ html {
   height: 36px;
   background-color: var(--swiss-bg);
   color: var(--swiss-fg);
-  border: 2px solid var(--swiss-border);
+  border: 1px solid var(--color-border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3352,4 +3380,25 @@ html {
   .flux-chat-actions-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ══════════════════════════════════════════════
+   DARK THEME — Global micro-details
+   ══════════════════════════════════════════════ */
+
+/* Text selection */
+::selection {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+/* Scrollbar (desktop) */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--color-bg-overlay);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-bg-raised);
 }

@@ -21,8 +21,8 @@ export default function RootLayout({
           rel="stylesheet"
         />
         {/* Status bar color — dark hero on mobile, light bg on light screens */}
-        <meta name="theme-color" content="#f2f2f7" />
-        <meta name="theme-color" content="#0b0b0d" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#0a0a0d" />
+        <meta name="theme-color" content="#0a0a0d" media="(prefers-color-scheme: dark)" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
