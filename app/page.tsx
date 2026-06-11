@@ -1530,7 +1530,7 @@ ${contenidoConsolidado}
               {/* Coach — span 2 — animated chat */}
               <div className="pub-card pub-card--wide" id="pub-coach">
                 <div className="pub-card__body">
-                  <div className="pub-card__icon" style={{ background: "rgba(232,64,26,0.1)" }}>
+                  <div className="pub-card__icon" style={{ background: "transparent" }}>
                     <MessageCircle size={22} stroke="#E8401A" strokeWidth={1.8} fill="none"/>
                   </div>
                   <h3 className="pub-card__h3">Coach</h3>
@@ -1551,7 +1551,7 @@ ${contenidoConsolidado}
 
               {/* Narrador */}
               <div className="pub-card" id="pub-estudio">
-                <div className="pub-card__icon" style={{ background: "rgba(255,255,255,0.08)" }}>
+                <div className="pub-card__icon" style={{ background: "transparent" }}>
                   <BookOpen size={22} stroke="#fff" strokeWidth={1.8}/>
                 </div>
                 <h3 className="pub-card__h3">Narrador</h3>
@@ -1571,7 +1571,7 @@ ${contenidoConsolidado}
 
               {/* Biblia — dark background, animated chips */}
               <div className="pub-card pub-card--dark">
-                <div className="pub-card__icon" style={{ background: "rgba(255,255,255,0.12)" }}>
+                <div className="pub-card__icon" style={{ background: "transparent" }}>
                   <Sun size={22} stroke="#fff" strokeWidth={1.8}/>
                 </div>
                 <h3 className="pub-card__h3" style={{ color: "#fff" }}>Biblia metafísica</h3>
@@ -1585,7 +1585,7 @@ ${contenidoConsolidado}
 
               {/* Testimonios — accent red, rotating quotes */}
               <div className="pub-card pub-card--red">
-                <div className="pub-card__icon" style={{ background: "rgba(255,255,255,0.15)" }}>
+                <div className="pub-card__icon" style={{ background: "transparent" }}>
                   <Star size={22} stroke="#fff" strokeWidth={1.8}/>
                 </div>
                 <h3 className="pub-card__h3" style={{ color: "#fff" }}>Testimonios</h3>
@@ -1599,7 +1599,7 @@ ${contenidoConsolidado}
 
               {/* Planes — animated day strip */}
               <div className="pub-card">
-                <div className="pub-card__icon" style={{ background: "rgba(255,255,255,0.08)" }}>
+                <div className="pub-card__icon" style={{ background: "transparent" }}>
                   <CalendarDays size={22} stroke="#fff" strokeWidth={1.8}/>
                 </div>
                 <h3 className="pub-card__h3">Planes guiados</h3>
@@ -1620,7 +1620,7 @@ ${contenidoConsolidado}
               {/* Memoria — span 2 — animated items */}
               <div className="pub-card pub-card--wide" id="pub-memoria">
                 <div className="pub-card__body">
-                  <div className="pub-card__icon" style={{ background: "rgba(232,64,26,0.1)" }}>
+                  <div className="pub-card__icon" style={{ background: "transparent" }}>
                     <Save size={22} stroke="#E8401A" strokeWidth={1.8}/>
                   </div>
                   <h3 className="pub-card__h3">Memoria</h3>
@@ -1647,7 +1647,7 @@ ${contenidoConsolidado}
 
               {/* Telegram — animated notification */}
               <div className="pub-card pub-card--telegram">
-                <div className="pub-card__icon" style={{ background: "rgba(232,64,26,0.1)" }}>
+                <div className="pub-card__icon" style={{ background: "transparent" }}>
                   <Send size={22} stroke="#E8401A" strokeWidth={1.8}/>
                 </div>
                 <h3 className="pub-card__h3">Telegram</h3>
@@ -1665,7 +1665,7 @@ ${contenidoConsolidado}
               {/* Todo conectado — span 2 — mini orbit */}
               <div className="pub-card pub-card--wide" id="pub-todo-conectado">
                 <div className="pub-card__body">
-                  <div className="pub-card__icon" style={{ background: "rgba(232,64,26,0.08)" }}>
+                  <div className="pub-card__icon" style={{ background: "transparent" }}>
                     <MessageCircle size={22} stroke="#E8401A" strokeWidth={1.8} fill="none"/>
                   </div>
                   <h3 className="pub-card__h3">Todo conectado</h3>
@@ -1696,7 +1696,7 @@ ${contenidoConsolidado}
 
               {/* Mi libro */}
               <div className="pub-card">
-                <div className="pub-card__icon" style={{ background: "rgba(255,255,255,0.08)" }}>
+                <div className="pub-card__icon" style={{ background: "transparent" }}>
                   <PenLine size={22} stroke="#fff" strokeWidth={1.8}/>
                 </div>
                 <h3 className="pub-card__h3">Mi libro</h3>

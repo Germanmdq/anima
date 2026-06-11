@@ -191,9 +191,7 @@
   justify-content: space-between;
   gap: 12px;
   flex-shrink: 0;
-  position: relative;
-  z-index: 100;
-  overflow: visible;
+  z-index: 10;
 }
 
 .odiseo-topbar__left {
@@ -3163,12 +3161,12 @@ details.ods-pub-faq-item[open] .ods-pub-faq-q__pm { transform: rotate(45deg); }
   border-color: rgba(255,255,255,0.5);
 }
 .pub-btn--dark {
-  background: var(--color-bg-elevated);
-  color: #0b0b0d;
+  background: var(--color-bg-raised);
+  color: var(--color-text);
 }
 .pub-btn--white {
-  background: var(--color-bg-elevated);
-  color: var(--color-dark);
+  background: #fff;
+  color: #0a0a0d;
 }
 .pub-btn--lg {
   font-size: 16px;
@@ -3346,8 +3344,8 @@ details.ods-pub-faq-item[open] .ods-pub-faq-q__pm { transform: rotate(45deg); }
 }
 .pub-hero-btn:hover { opacity: 0.85; }
 .pub-hero-btn--solid {
-  background: var(--color-bg-elevated);
-  color: #0b0b0d;
+  background: #fff;
+  color: #0a0a0d;
 }
 .pub-hero-btn--ghost {
   background: transparent;
