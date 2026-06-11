@@ -2372,9 +2372,9 @@ details.ods-pub-faq-item[open] .ods-pub-faq-q__pm { transform: rotate(45deg); }
   font-size: 20px;
   flex-shrink: 0;
 }
-.tool-icon.red  { background: rgba(232, 64, 26, 0.12); }
-.tool-icon.dark { background: var(--color-dark); }
-.tool-icon.gray { background: var(--color-bg); }
+.tool-icon.red  { background: transparent; }
+.tool-icon.dark { background: transparent; }
+.tool-icon.gray { background: transparent; }
 
 .tool-text { flex: 1; min-width: 0; }
 .tool-text h4 {
@@ -4269,7 +4269,7 @@ details.ods-pub-faq-item[open] .ods-pub-faq-q__pm { transform: rotate(45deg); }
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: rgba(232,64,26,0.1);
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;

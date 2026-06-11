@@ -2018,6 +2018,18 @@ ${contenidoConsolidado}
               <p style={{ fontSize: "14px", color: "var(--color-muted)", margin: 0, fontFamily: "var(--font-base)" }}>Conferencias y libros que alimentan las respuestas y prácticas de {BRAND_NAME}.</p>
             </header>
 
+            {/* Search input — visible on all screen sizes */}
+            <div style={{ position: "relative", marginBottom: "16px" }}>
+              <SearchIcon size={15} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "var(--color-text-subtle)", pointerEvents: "none" }} />
+              <input
+                type="text"
+                placeholder="Buscar fuente…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{ width: "100%", padding: "11px 14px 11px 38px", borderRadius: "var(--radius-md)", border: "0.5px solid var(--color-border)", background: "var(--color-bg-elevated)", color: "var(--color-text)", fontSize: "14px", fontFamily: "var(--font-base)", outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+
             {!hasFounderAccess && (
               <div style={{ background: "var(--color-surface)", border: "0.5px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: "16px 20px", marginBottom: "20px", display: "flex", justifyContent: "space-between", gap: "16px", alignItems: "center", flexWrap: "wrap", boxShadow: "var(--shadow-card)" }}>
                 <p style={{ fontSize: "13px", color: "var(--color-muted)", margin: 0, fontFamily: "var(--font-base)" }}>Las conferencias completas forman parte de la suscripción de {BRAND_NAME}.</p>
@@ -2344,9 +2356,9 @@ ${contenidoConsolidado}
                             style={{
                               padding: "8px 16px",
                               borderRadius: "22px",
-                              border: bookForm.tone === tono ? "1.5px solid var(--color-dark)" : "0.5px solid var(--color-border)",
-                              backgroundColor: bookForm.tone === tono ? "var(--color-dark)" : "var(--color-bg)",
-                              color: bookForm.tone === tono ? "#fff" : "var(--color-dark)",
+                              border: bookForm.tone === tono ? "1.5px solid var(--color-accent)" : "0.5px solid var(--color-border)",
+                              backgroundColor: bookForm.tone === tono ? "var(--color-accent)" : "var(--color-bg)",
+                              color: bookForm.tone === tono ? "#fff" : "var(--color-text)",
                               fontSize: "13px",
                               fontWeight: 600,
                               fontFamily: "var(--font-base)",
@@ -2397,7 +2409,7 @@ ${contenidoConsolidado}
                       key={label}
                       type="button"
                       disabled
-                      style={{ padding: "14px 16px", borderRadius: "var(--radius-lg)", border: "0.5px solid var(--color-border)", backgroundColor: "var(--color-bg)", color: "var(--color-muted)", fontSize: "13px", fontWeight: 500, fontFamily: "var(--font-base)", cursor: "not-allowed", textAlign: "left", opacity: 0.65 }}
+                      style={{ padding: "14px 16px", borderRadius: "var(--radius-lg)", border: "0.5px solid var(--color-border)", backgroundColor: "var(--color-bg)", color: "var(--color-text-muted)", fontSize: "13px", fontWeight: 500, fontFamily: "var(--font-base)", cursor: "not-allowed", textAlign: "left" }}
                     >
                       {label}
                     </button>
