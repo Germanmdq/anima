@@ -515,7 +515,7 @@ html {
   width: 14px;
   height: 14px;
   flex-shrink: 0;
-  color: #8C8C90;
+  color: var(--color-text-muted);
 }
 
 .flux-search-bar input {
@@ -790,7 +790,7 @@ html {
 .flux-progress-bar {
   flex: 1;
   height: 5px;
-  background: #E8E8ED;
+  background: var(--color-bg-overlay);
   border-radius: 3px;
   margin: 0 10px;
   overflow: hidden;
@@ -861,7 +861,7 @@ html {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #E8E8ED;
+  background: var(--color-bg-overlay);
 }
 
 .flux-dot--active {
@@ -1543,7 +1543,7 @@ html {
   width: 14px;
   height: 14px;
   flex-shrink: 0;
-  color: #8C8C90;
+  color: var(--color-text-muted);
 }
 
 .library-search input {
@@ -2908,7 +2908,7 @@ html {
     align-items: center;
     background: none;
     border: none;
-    color: #8C8C90;
+    color: var(--color-text-muted);
     font-size: 10px;
     font-weight: 600;
     cursor: pointer;
@@ -3316,7 +3316,7 @@ html {
 }
 
 .flux-card__title svg {
-  color: #5f6067;
+  color: var(--color-text-subtle);
 }
 
 .flux-hero-icon {

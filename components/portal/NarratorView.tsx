@@ -244,7 +244,7 @@ export default function NarratorView({ sendToSection, pendingContext, clearPendi
 
         {error && (
           <div style={{ display: "flex", justifyContent: "flex-start" }}>
-            <div style={{ maxWidth: "min(900px, 88%)", padding: "12px 16px", borderRadius: "20px 20px 20px 6px", backgroundColor: "#FDECEC", color: "var(--swiss-accent)", fontSize: "13px", fontWeight: 800 }}>
+            <div style={{ maxWidth: "min(900px, 88%)", padding: "12px 16px", borderRadius: "20px 20px 20px 6px", backgroundColor: "rgba(232,64,26,0.12)", color: "var(--color-text)", fontSize: "13px", fontWeight: 800, border: "0.5px solid rgba(232,64,26,0.3)" }}>
               {error}
             </div>
           </div>
@@ -253,8 +253,8 @@ export default function NarratorView({ sendToSection, pendingContext, clearPendi
         {result.trim().length > 0 && !error && (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "10px" }}>
             <div style={{
-              backgroundColor: "#E9E9EC",
-              color: "var(--swiss-fg)",
+              backgroundColor: "var(--color-bg-elevated)",
+              color: "var(--color-text)",
               padding: "14px 16px",
               borderRadius: "20px 20px 20px 6px",
               fontSize: "14px",
@@ -262,6 +262,7 @@ export default function NarratorView({ sendToSection, pendingContext, clearPendi
               lineHeight: "1.7",
               maxWidth: "min(900px, 88%)",
               wordBreak: "break-word",
+              border: "0.5px solid var(--color-border)",
               boxShadow: "0 6px 18px rgba(0,0,0,0.08)"
             }}>
               {parseSimpleMarkdown(result)}
@@ -287,22 +288,22 @@ export default function NarratorView({ sendToSection, pendingContext, clearPendi
                     fontSize: "11px",
                     fontWeight: 800,
                     borderRadius: "999px",
-                    border: "1.5px solid #000",
+                    border: "1px solid var(--color-border-strong)",
                     cursor: "pointer",
-                    backgroundColor: "var(--swiss-bg)",
+                    backgroundColor: "var(--color-bg-raised)",
                     display: "flex",
                     alignItems: "center",
                     gap: "6px",
-                    color: "var(--swiss-fg)",
+                    color: "var(--color-text)",
                     transition: "all 0.15s ease"
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "var(--swiss-accent)";
-                    e.currentTarget.style.color = "var(--swiss-accent)";
+                    e.currentTarget.style.borderColor = "var(--color-accent)";
+                    e.currentTarget.style.color = "var(--color-accent)";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = "#000";
-                    e.currentTarget.style.color = "var(--swiss-fg)";
+                    e.currentTarget.style.borderColor = "var(--color-border-strong)";
+                    e.currentTarget.style.color = "var(--color-text)";
                   }}
                 >
                   {action.icon} {action.label}
@@ -318,10 +319,11 @@ export default function NarratorView({ sendToSection, pendingContext, clearPendi
               maxWidth: "min(900px, 88%)",
               padding: "12px 16px",
               borderRadius: "20px 20px 20px 6px",
-              backgroundColor: "#E9E9EC",
-              color: "var(--swiss-fg)",
+              backgroundColor: "var(--color-bg-elevated)",
+              color: "var(--color-text)",
               fontSize: "13px",
               fontWeight: 800,
+              border: "0.5px solid var(--color-border)",
               boxShadow: "0 6px 18px rgba(0,0,0,0.08)"
             }}>
               Odiseo está pensando...

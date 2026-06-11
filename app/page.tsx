@@ -1551,8 +1551,8 @@ ${contenidoConsolidado}
 
               {/* Narrador */}
               <div className="pub-card" id="pub-estudio">
-                <div className="pub-card__icon" style={{ background: "#f2f2f7" }}>
-                  <BookOpen size={22} stroke="#1d1d1f" strokeWidth={1.8}/>
+                <div className="pub-card__icon" style={{ background: "rgba(255,255,255,0.08)" }}>
+                  <BookOpen size={22} stroke="#fff" strokeWidth={1.8}/>
                 </div>
                 <h3 className="pub-card__h3">Narrador</h3>
                 <p className="pub-card__p">Explicaciones vivas, ejemplos y escenas guiadas para entender de verdad.</p>
@@ -1599,8 +1599,8 @@ ${contenidoConsolidado}
 
               {/* Planes — animated day strip */}
               <div className="pub-card">
-                <div className="pub-card__icon" style={{ background: "#f2f2f7" }}>
-                  <CalendarDays size={22} stroke="#1d1d1f" strokeWidth={1.8}/>
+                <div className="pub-card__icon" style={{ background: "rgba(255,255,255,0.08)" }}>
+                  <CalendarDays size={22} stroke="#fff" strokeWidth={1.8}/>
                 </div>
                 <h3 className="pub-card__h3">Planes guiados</h3>
                 <p className="pub-card__p">Prácticas de 7, 15 o 30 días para sostener tu deseo.</p>
@@ -1696,8 +1696,8 @@ ${contenidoConsolidado}
 
               {/* Mi libro */}
               <div className="pub-card">
-                <div className="pub-card__icon" style={{ background: "#f2f2f7" }}>
-                  <PenLine size={22} stroke="#1d1d1f" strokeWidth={1.8}/>
+                <div className="pub-card__icon" style={{ background: "rgba(255,255,255,0.08)" }}>
+                  <PenLine size={22} stroke="#fff" strokeWidth={1.8}/>
                 </div>
                 <h3 className="pub-card__h3">Mi libro</h3>
                 <p className="pub-card__p">Convertí tus ideas y aprendizajes en capítulos de un libro propio.</p>

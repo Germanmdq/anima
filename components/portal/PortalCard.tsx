@@ -65,7 +65,7 @@ export default function PortalCard({ num, title, excerpt, desc, icon, onEnter }:
             fontSize: "13px",
             fontWeight: 600,
             borderRadius: "100px",
-            background: "var(--color-dark)",
+            background: "var(--color-accent)",
             color: "#fff",
             border: "none",
             cursor: "pointer",

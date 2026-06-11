@@ -259,8 +259,8 @@ Cuando te descubras abrumado por la evidencia externa:
                         alignItems: "center",
                         justifyContent: "center",
                         gap: "8px",
-                        backgroundColor: index === 0 ? "var(--swiss-accent)" : "var(--swiss-fg)",
-                        color: index === 0 ? "#FFFFFF" : "var(--swiss-bg)"
+                        backgroundColor: index === 0 ? "var(--color-accent)" : "var(--color-bg-raised)",
+                        color: index === 0 ? "#fff" : "var(--color-text)"
                       }}
                     >
                       {cta.icon}

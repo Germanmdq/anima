@@ -33,7 +33,7 @@ export default function TelegramView({ sendToSection, pendingContext, clearPendi
             style={{ width: "100%", height: "100px", padding: "14px 16px", borderRadius: "var(--radius-sm)", border: "0.5px solid var(--color-border)", background: "var(--color-bg)", fontSize: "13px", fontFamily: "var(--font-base)", resize: "none", boxSizing: "border-box", color: "var(--color-dark)", outline: "none" }}
           />
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-            <button disabled style={{ opacity: 0.5, cursor: "not-allowed", padding: "11px 18px", borderRadius: "var(--radius-md)", fontSize: "14px", fontWeight: 600, background: "var(--color-dark)", color: "#fff", border: "none", fontFamily: "var(--font-base)" }}>
+            <button disabled style={{ opacity: 0.5, cursor: "not-allowed", padding: "11px 18px", borderRadius: "var(--radius-md)", fontSize: "14px", fontWeight: 600, background: "var(--color-bg-raised)", color: "var(--color-text)", border: "0.5px solid var(--color-border)", fontFamily: "var(--font-base)" }}>
               Configurar Telegram para enviar
             </button>
             <button onClick={() => clearPendingContext?.()} style={{ padding: "11px 18px", borderRadius: "var(--radius-md)", fontSize: "14px", fontWeight: 500, background: "transparent", color: "var(--color-muted)", border: "0.5px solid var(--color-border)", cursor: "pointer", fontFamily: "var(--font-base)" }}>
@@ -64,7 +64,7 @@ export default function TelegramView({ sendToSection, pendingContext, clearPendi
 
         <button
           disabled
-          style={{ opacity: 0.5, cursor: "not-allowed", padding: "13px 20px", borderRadius: "var(--radius-md)", fontWeight: 600, fontSize: "15px", background: "var(--color-dark)", color: "#fff", border: "none", fontFamily: "var(--font-base)", alignSelf: "flex-start" }}
+          style={{ opacity: 0.5, cursor: "not-allowed", padding: "13px 20px", borderRadius: "var(--radius-md)", fontWeight: 600, fontSize: "15px", background: "var(--color-bg-raised)", color: "var(--color-text)", border: "0.5px solid var(--color-border)", fontFamily: "var(--font-base)", alignSelf: "flex-start" }}
         >
           Configurar Telegram
         </button>
